@@ -150,6 +150,9 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             timeStampText = (TextView) rootView.findViewById(R.id.timestamp_text);
             screenNameText = (TextView) rootView.findViewById(R.id.screen_name_text);
             avatarImageView = (ImageView) rootView.findViewById(R.id.avatar_image);
+            // Can also make links clickable by setting setMovementMethod(LinkMovementMethod.getInstance())
+            // In that case need to remove autoLink = "web" from xml
+            // Refer https://stackoverflow.com/questions/2734270/how-do-i-make-links-in-a-textview-clickable
         }
 
         @Override
