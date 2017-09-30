@@ -19,9 +19,11 @@ import android.content.Context;
  *
  */
 public class TweetApplication extends Application {
-    private static long currMinTweetId;
 	private static Context context;
     private static User loggedInUser;
+
+    private static long currMinTweetId; // used as max_id param
+    private static long currMaxTweetId; // used as since_id param
 
 	@Override
 	public void onCreate() {
@@ -31,12 +33,21 @@ public class TweetApplication extends Application {
 		FlowLog.setMinimumLoggingLevel(FlowLog.Level.V);
 
 		TweetApplication.context = this;
-        TweetApplication.currMinTweetId = -1;
+        TweetApplication.currMinTweetId = Long.MAX_VALUE;
+        TweetApplication.currMaxTweetId = Long.MIN_VALUE;
 	}
 
 	public static TweetClient getTweetRestClient() {
 		return (TweetClient) TweetClient.getInstance(TweetClient.class, TweetApplication.context);
 	}
+
+    public static void setLoggedInUser(User user) {
+        loggedInUser = user;
+    }
+
+    public static User getLoggedInUser() {
+        return loggedInUser;
+    }
 
     public static long getCurrMinTweetId() {
         return currMinTweetId;
@@ -46,11 +57,11 @@ public class TweetApplication extends Application {
         currMinTweetId = minTweetId;
     }
 
-    public static void setLoggedInUser(User user) {
-        loggedInUser = user;
+    public static long getCurrMaxTweetId() {
+        return currMaxTweetId;
     }
 
-    public static User getLoggedInUser() {
-        return loggedInUser;
+    public static void setCurrMaxTweetId(long maxTweetId) {
+        currMaxTweetId = maxTweetId;
     }
 }

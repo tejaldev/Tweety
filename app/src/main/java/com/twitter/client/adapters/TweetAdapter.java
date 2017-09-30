@@ -50,12 +50,19 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         return TEXT_ONLY_VIEW_TYPE;
     }
 
-    public void setNewItems(List<Tweet> newItems) {
-        tweetList.clear();
-        tweetList.addAll(newItems);
+    /**
+     * Inserts new tweets at the top of the list
+     * @param newItems
+     */
+    public void setNewData(List<Tweet> newItems) {
+        tweetList.addAll(0, newItems);
         this.notifyItemRangeChanged(0, newItems.size());
     }
 
+    /**
+     * Appends next page data at the bottom of list
+     * @param moreItemList
+     */
     public void setMoreData(List<Tweet> moreItemList) {
         tweetList.addAll(moreItemList);
         this.notifyItemInserted(moreItemList.size());

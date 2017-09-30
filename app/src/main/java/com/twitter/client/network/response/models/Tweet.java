@@ -335,6 +335,8 @@ public class Tweet {
 
                 if (tweet.id < TweetApplication.getCurrMinTweetId()) {
                     TweetApplication.setCurrMinTweetId(tweet.id);
+                } else if (tweet.id > TweetApplication.getCurrMaxTweetId()) {
+                    TweetApplication.setCurrMaxTweetId(tweet.id);
                 }
 
                 // for relative timestamp
@@ -393,6 +395,8 @@ public class Tweet {
 
             if (tweet.id < TweetApplication.getCurrMinTweetId()) {
                 TweetApplication.setCurrMinTweetId(tweet.id);
+            } else if (tweet.id > TweetApplication.getCurrMaxTweetId()) {
+                TweetApplication.setCurrMaxTweetId(tweet.id);
             }
 
             // for relative timestamp

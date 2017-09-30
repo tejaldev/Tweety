@@ -12,8 +12,15 @@
     tools:context="com.twitter.client.TweetListActivity"
     tools:showIn="@layout/activity_tweet_list">
 
-    <android.support.v7.widget.RecyclerView
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_tweets"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/tweets_recycler_view"/>
+        android:layout_height="match_parent">
+
+        <android.support.v7.widget.RecyclerView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/tweets_recycler_view"/>
+
+    </android.support.v4.widget.SwipeRefreshLayout>
 </RelativeLayout>

@@ -2,8 +2,7 @@ package com.twitter.client;
 
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -22,7 +21,6 @@ import com.twitter.client.listeners.EndlessRecyclerViewScrollListener;
 import com.twitter.client.network.response.models.Tweet;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
@@ -35,6 +33,7 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
     private Handler handler;
     private TweetAdapter tweetAdapter;
     private RecyclerView tweetRecyclerView;
+    private SwipeRefreshLayout swipeRefreshTweetLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +61,14 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
         };
         // Adds the scroll listener to RecyclerView
         tweetRecyclerView.addOnScrollListener(scrollListener);
+
+        swipeRefreshTweetLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_tweets);
+        swipeRefreshTweetLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                fetchNewTweets();
+            }
+        });
     }
 
     @Override
@@ -126,23 +133,23 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
                 TweetApplication.getTweetRestClient().getHomeTimelineTweets(params, new JsonHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                        Log.d(TAG, "loadTweets:: Response received successfully.");
+                        Log.d(TAG, "loadMoreTweets:: Response received successfully.");
                     }
 
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
-                        Log.d(TAG, "loadTweets:: Response received successfully.");
+                        Log.d(TAG, "loadMoreTweets:: Response received successfully.");
                         insertNewPageData(Tweet.parseTweetListFromJson(response));
                     }
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                        Log.e(TAG, "loadTweets:: Failed to receive api response: " + responseString, throwable);
+                        Log.e(TAG, "loadMoreTweets:: Failed to receive api response: " + responseString, throwable);
                     }
 
                     @Override
                     public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                        Log.e(TAG, "loadTweets:: Failed to receive api response: " + errorResponse, throwable);
+                        Log.e(TAG, "loadMoreTweets:: Failed to receive api response: " + errorResponse, throwable);
                     }
                 });
             }
@@ -151,11 +158,49 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
         handler.postDelayed(runnableCode, 2000);
     }
 
+    /**
+     * Fetches new tweets using rest client
+     */
+    private void fetchNewTweets() {
+        Runnable runnableCode = new Runnable() {
+            @Override
+            public void run() {
+                RequestParams params = new RequestParams();
+                params.put("since_id", TweetApplication.getCurrMaxTweetId());
+                TweetApplication.getTweetRestClient().getHomeTimelineTweets(params, new JsonHttpResponseHandler() {
+                    @Override
+                    public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                        Log.d(TAG, "fetchNewTweets:: Response received successfully.");
+                        insertNewFetchedData(Tweet.parseTweetListFromJson(response));
+                        stopRefreshing();
+                    }
+
+                    @Override
+                    public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                        Log.e(TAG, "fetchNewTweets:: Failed to receive api response: " + responseString, throwable);
+                        stopRefreshing();
+                    }
+
+                    @Override
+                    public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                        Log.e(TAG, "fetchNewTweets:: Failed to receive api response: " + errorResponse, throwable);
+                        stopRefreshing();
+                    }
+                });
+            }
+        };
+        handler.postDelayed(runnableCode, 2000);
+    }
+
     private void setupAdapter(List<Tweet> tweets) {
         tweetAdapter = new TweetAdapter(tweets, this);
         tweetRecyclerView.setAdapter(tweetAdapter);
     }
 
+    /**
+     * Appends next page data at the bottom of list
+     * @param tweets
+     */
     private void insertNewPageData(final List<Tweet> tweets) {
         runOnUiThread(new Runnable() {
             @Override
@@ -164,6 +209,24 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
                 tweetAdapter.notifyDataSetChanged();
             }
         });
+    }
+
+    /**
+     * Inserts new tweets at the top of list
+     * @param tweets
+     */
+    private void insertNewFetchedData(final List<Tweet> tweets) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                tweetAdapter.setNewData(tweets);
+                tweetAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    private void stopRefreshing() {
+        swipeRefreshTweetLayout.setRefreshing(false);
     }
 
     private void showComposeDialogFragment() {
