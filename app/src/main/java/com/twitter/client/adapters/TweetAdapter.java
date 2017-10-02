@@ -5,6 +5,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -29,7 +30,10 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     private TweetItemClickListener itemClickListener;
 
     public interface TweetItemClickListener {
-        void onTweetItemClickListener(View view, Tweet selectedArticle);
+        void onTweetItemClickListener(View view, Tweet selectedTweet, int position);
+        void onReplyClickListener(View view, Tweet selectedTweet, int position);
+        void onRetweetClickListener(View view, Tweet selectedTweet, int position);
+        void onFavoriteClickListener(View view, Tweet selectedTweet, int position);
     }
 
     public TweetAdapter(List<Tweet> tweetList, TweetItemClickListener itemClickListener) {
@@ -50,6 +54,10 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         return TEXT_ONLY_VIEW_TYPE;
     }
 
+    public Tweet getItemAt(int position) {
+        return tweetList.get(position);
+    }
+
     /**
      * Inserts new tweets at the top of the list
      * @param newItems
@@ -68,9 +76,22 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         this.notifyItemInserted(moreItemList.size());
     }
 
+    /**
+     * Inserts a new tweet at the top of the list
+     * @param tweet
+     */
     public void addNewItem(Tweet tweet) {
         tweetList.add(0, tweet);
         this.notifyItemInserted(0);
+    }
+
+    /**
+     * Updates a tweet
+     * @param tweet
+     */
+    public void updateData(int position, Tweet tweet) {
+        tweetList.set(position, tweet);
+        this.notifyItemChanged(position);
     }
 
     @Override
@@ -92,7 +113,7 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                     View textOnlyView = inflater.inflate(R.layout.tweet_text_row_layout, parent, false);
 
                     //create view holder from above view
-                    viewHolder = new TextOnlyViewHolder(textOnlyView);
+                    viewHolder = new TweetViewHolder(textOnlyView);
                 break;
         }
         return viewHolder;
@@ -104,51 +125,88 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         switch (getItemViewType(position)) {
             case IMAGE_VIEW_TYPE:
                 ImageTweetViewHolder imageTweetViewHolder = (ImageTweetViewHolder) holder;
-                setupImageTweetViewHolder(imageTweetViewHolder, position);
+                setupTweetViewHolder(imageTweetViewHolder, position);
+
+                // setup additional fields
+                Glide.with(holder.itemView.getContext())
+                        .load(Uri.parse(tweetList.get(position).getEntities().getMedia().get(0).getMediaUrl()))
+                        .placeholder(R.drawable.placeholder_image)
+                        .into(imageTweetViewHolder.mainImageView);
                 break;
 
             case TEXT_ONLY_VIEW_TYPE:
             default:
-                TextOnlyViewHolder textOnlyViewHolder = (TextOnlyViewHolder) holder;
-                setupTextTweetViewHolder(textOnlyViewHolder, position);
+                TweetViewHolder textOnlyViewHolder = (TweetViewHolder) holder;
+                setupTweetViewHolder(textOnlyViewHolder, position);
                 break;
         }
     }
 
-    public class ImageTweetViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        public TextView titleText;
-        public TextView handleText;
-        public TextView timeStampText;
-        public TextView screenNameText;
+    public class ImageTweetViewHolder extends TweetViewHolder implements View.OnClickListener {
         public ImageView mainImageView;
-        public ImageView avatarImageView;
 
         public ImageTweetViewHolder(View rootView) {
             super(rootView);
 
             rootView.setOnClickListener(this);
-            titleText = (TextView) rootView.findViewById(R.id.title_text);
-            handleText = (TextView) rootView.findViewById(R.id.handle_text);
-            timeStampText = (TextView) rootView.findViewById(R.id.timestamp_text);
-            screenNameText = (TextView) rootView.findViewById(R.id.screen_name_text);
             mainImageView = (ImageView) rootView.findViewById(R.id.main_image);
-            avatarImageView = (ImageView) rootView.findViewById(R.id.avatar_image);
         }
 
         @Override
         public void onClick(View view) {
-            itemClickListener.onTweetItemClickListener(view, tweetList.get(getAdapterPosition()));
+            itemClickListener.onTweetItemClickListener(view, tweetList.get(getAdapterPosition()), getAdapterPosition());
         }
     }
 
-    public class TextOnlyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    private void setupTweetViewHolder(TweetViewHolder holder, int position) {
+        Tweet tweet = tweetList.get(position);
+
+        Glide.with(holder.itemView.getContext())
+                .load(Uri.parse(tweet.getUser().getProfileImageUrl()))
+                .bitmapTransform(new CircularTransformation(holder.itemView.getContext()))
+                .placeholder(R.drawable.placeholder_image)
+                .into(holder.avatarImageView);
+
+        holder.titleText.setText(tweet.getText());
+        holder.handleText.setText(tweet.getUser().getUserHandle());
+        holder.timeStampText.setText(tweet.getRelativeTimeStamp());
+        holder.screenNameText.setText(tweet.getUser().getScreenName());
+        holder.retweetCountText.setText(String.valueOf(tweet.getRetweetCount()));
+        holder.favoriteCountText.setText(String.valueOf(tweet.getFavoriteCount()));
+
+        bindRetweetButtonRes(holder, tweet);
+        bindFavoriteButtonRes(holder, tweet);
+    }
+
+    private void bindRetweetButtonRes(TweetViewHolder holder, Tweet tweet) {
+        if (tweet.isRetweeted()) {
+            holder.retweetTweetButton.setImageResource(R.drawable.ic_re_tweet_enabled);
+        } else {
+            holder.retweetTweetButton.setImageResource(R.drawable.ic_re_tweet);
+        }
+    }
+
+    private void bindFavoriteButtonRes(TweetViewHolder holder, Tweet tweet) {
+        if (tweet.isFavorited()) {
+            holder.favTweetButton.setImageResource(R.drawable.ic_fav_tweet_enabled);
+        } else {
+            holder.favTweetButton.setImageResource(R.drawable.ic_fav_tweet);
+        }
+    }
+
+    public class TweetViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         public TextView titleText;
         public TextView handleText;
         public TextView timeStampText;
         public TextView screenNameText;
+        public TextView retweetCountText;
+        public TextView favoriteCountText;
         public ImageView avatarImageView;
+        private ImageButton favTweetButton;
+        private ImageButton replyTweetButton;
+        private ImageButton retweetTweetButton;
 
-        public TextOnlyViewHolder(View rootView) {
+        public TweetViewHolder(View rootView) {
             super(rootView);
 
             rootView.setOnClickListener(this);
@@ -156,7 +214,16 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             handleText = (TextView) rootView.findViewById(R.id.handle_text);
             timeStampText = (TextView) rootView.findViewById(R.id.timestamp_text);
             screenNameText = (TextView) rootView.findViewById(R.id.screen_name_text);
+            retweetCountText = (TextView) rootView.findViewById(R.id.re_tweet_count);
+            favoriteCountText = (TextView) rootView.findViewById(R.id.fav_tweet_count);
             avatarImageView = (ImageView) rootView.findViewById(R.id.avatar_image);
+
+            favTweetButton = (ImageButton) rootView.findViewById(R.id.fav_tweet_button);
+            replyTweetButton = (ImageButton) rootView.findViewById(R.id.reply_tweet_button);
+            retweetTweetButton = (ImageButton) rootView.findViewById(R.id.re_tweet_button);
+
+            setupActionButtonListeners();
+
             // Can also make links clickable by setting setMovementMethod(LinkMovementMethod.getInstance())
             // In that case need to remove autoLink = "web" from xml
             // Refer https://stackoverflow.com/questions/2734270/how-do-i-make-links-in-a-textview-clickable
@@ -164,42 +231,33 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
         @Override
         public void onClick(View view) {
-            itemClickListener.onTweetItemClickListener(view, tweetList.get(getAdapterPosition()));
+            itemClickListener.onTweetItemClickListener(view, tweetList.get(getAdapterPosition()), getAdapterPosition());
         }
-    }
 
-    private void setupImageTweetViewHolder(ImageTweetViewHolder holder, int position) {
-        Tweet tweet = tweetList.get(position);
+        private void setupActionButtonListeners() {
+            // reply
+            replyTweetButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    itemClickListener.onReplyClickListener(v, tweetList.get(getAdapterPosition()), getAdapterPosition());
+                }
+            });
 
-        Glide.with(holder.itemView.getContext())
-                .load(Uri.parse(tweet.getEntities().getMedia().get(0).getMediaUrl()))
-                .placeholder(R.drawable.placeholder_image)
-                .into(holder.mainImageView);
+            // retweet
+            retweetTweetButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    itemClickListener.onRetweetClickListener(v, tweetList.get(getAdapterPosition()), getAdapterPosition());
+                }
+            });
 
-        Glide.with(holder.itemView.getContext())
-                .load(Uri.parse(tweet.getUser().getProfileImageUrl()))
-                .bitmapTransform(new CircularTransformation(holder.itemView.getContext()))
-                .placeholder(R.drawable.placeholder_image)
-                .into(holder.avatarImageView);
-
-        holder.titleText.setText(tweet.getText());
-        holder.handleText.setText(tweet.getUser().getUserHandle());
-        holder.timeStampText.setText(tweet.getRelativeTimeStamp());
-        holder.screenNameText.setText(tweet.getUser().getScreenName());
-    }
-
-    private void setupTextTweetViewHolder(TextOnlyViewHolder holder, int position) {
-        Tweet tweet = tweetList.get(position);
-
-        Glide.with(holder.itemView.getContext())
-                .load(Uri.parse(tweet.getUser().getProfileImageUrl()))
-                .bitmapTransform(new CircularTransformation(holder.itemView.getContext()))
-                .placeholder(R.drawable.placeholder_image)
-                .into(holder.avatarImageView);
-
-        holder.titleText.setText(tweet.getText());
-        holder.handleText.setText(tweet.getUser().getUserHandle());
-        holder.timeStampText.setText(tweet.getRelativeTimeStamp());
-        holder.screenNameText.setText(tweet.getUser().getScreenName());
+            // fav
+            favTweetButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    itemClickListener.onFavoriteClickListener(v, tweetList.get(getAdapterPosition()), getAdapterPosition());
+                }
+            });
+        }
     }
 }

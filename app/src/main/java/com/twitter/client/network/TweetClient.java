@@ -74,11 +74,46 @@ public class TweetClient extends OAuthBaseClient {
 		client.get(apiUrl, requestParams, responseHandler);
 	}
 
+    // https://developer.twitter.com/en/docs/tweets/post-and-engage/overview
+
 	public void postNewTweet(RequestParams params, AsyncHttpResponseHandler responseHandler) {
 		String apiUrl = getApiUrl("statuses/update.json");
 		RequestParams requestParams = buildRequestParams(params);
 		client.post(apiUrl, requestParams, responseHandler);
 	}
+
+    // https://developer.twitter.com/en/docs/tweets/post-and-engage/api-reference
+	public void postReTweetStatus(String tweetId, RequestParams params, AsyncHttpResponseHandler responseHandler) {
+		String apiUrl = getApiUrl("statuses/retweet/" + tweetId + ".json");
+		RequestParams requestParams = buildRequestParams(params);
+		client.post(apiUrl, requestParams, responseHandler);
+	}
+
+    public void postUnReTweetStatus(String tweetId, RequestParams params, AsyncHttpResponseHandler responseHandler) {
+        String apiUrl = getApiUrl("statuses/unretweet/" + tweetId + ".json");
+        RequestParams requestParams = buildRequestParams(params);
+        client.post(apiUrl, requestParams, responseHandler);
+    }
+
+    //https://developer.twitter.com/en/docs/tweets/post-and-engage/api-reference/post-favorites-create
+    public void postFavoritesCreateStatus(RequestParams params, AsyncHttpResponseHandler responseHandler) {
+        String apiUrl = getApiUrl("favorites/create.json");
+        RequestParams requestParams = buildRequestParams(params);
+        client.post(apiUrl, requestParams, responseHandler);
+    }
+
+    public void postFavoritesDestroyStatus(RequestParams params, AsyncHttpResponseHandler responseHandler) {
+        String apiUrl = getApiUrl("favorites/destroy.json");
+        RequestParams requestParams = buildRequestParams(params);
+        client.post(apiUrl, requestParams, responseHandler);
+    }
+
+    public void postReplyToTweet(RequestParams params, AsyncHttpResponseHandler responseHandler) {
+        String apiUrl = getApiUrl("statuses/update.json");
+        // in_reply_to_status_id should contain the tweet ID to which this reply is to be posted on.
+        RequestParams requestParams = buildRequestParams(params);
+        client.post(apiUrl, requestParams, responseHandler);
+    }
 
 	private RequestParams buildRequestParams(RequestParams params) {
 		if (params == null) {
