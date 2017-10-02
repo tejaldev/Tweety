@@ -6,5 +6,10 @@
     <string name="intent_host">cprest</string>
     <string name="compose_title">Compose</string>
     <string name="compose_hint_text">Whats happening?</string>
+    <string name="detail_compose_hint_text">Reply to %1$s</string>
     <string name="tweet_button_text">TWEET</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="detail_toolbar_title">Tweet</string>
 </resources>

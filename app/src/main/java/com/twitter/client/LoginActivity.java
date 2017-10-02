@@ -39,7 +39,14 @@ public class LoginActivity extends OAuthLoginActionBarActivity<TweetClient> {
 	@Override
 	public void onLoginSuccess() {
         fetchLoggedInUserDetails();
+
 		Intent i = new Intent(this, TweetListActivity.class);
+		if (Intent.ACTION_SEND.equals(getIntent().getAction())) {
+			// this is implicitly invoked intent so pass intent data to TweetListActivity
+			i.setAction(Intent.ACTION_SEND);
+			i.setType(getIntent().getType());
+			i.putExtras(getIntent());
+		}
 		startActivity(i);
 	}
 

@@ -1,5 +1,6 @@
 package com.twitter.client;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -15,25 +16,31 @@ import android.widget.Toast;
 
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
+import com.twitter.client.activities.TweetDetailActivity;
 import com.twitter.client.adapters.TweetAdapter;
+import com.twitter.client.adapters.TweetStatusActionHelper;
 import com.twitter.client.fragments.ComposeDialogFragment;
 import com.twitter.client.listeners.EndlessRecyclerViewScrollListener;
 import com.twitter.client.network.response.models.Tweet;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.parceler.Parcels;
 
 import java.util.List;
 
 import cz.msebera.android.httpclient.Header;
 
-public class TweetListActivity extends AppCompatActivity implements TweetAdapter.TweetItemClickListener, ComposeDialogFragment.TweetPostCompletionListener {
+public class TweetListActivity extends AppCompatActivity implements TweetAdapter.TweetItemClickListener,
+        ComposeDialogFragment.TweetPostCompletionListener, TweetStatusActionHelper.OnStatusUpdatedListener {
     public static String TAG = TweetListActivity.class.getSimpleName();
+    public static final int TWEET_DETAIL_STATUS = 1;
 
     private Handler handler;
     private TweetAdapter tweetAdapter;
     private RecyclerView tweetRecyclerView;
     private SwipeRefreshLayout swipeRefreshTweetLayout;
+    private TweetStatusActionHelper statusActionHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +52,7 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
         setSupportActionBar(toolbar);
 
         handler = new Handler();
+        statusActionHelper = new TweetStatusActionHelper(this);
 
         tweetRecyclerView = (RecyclerView) findViewById(R.id.tweets_recycler_view);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
@@ -69,6 +77,16 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
                 fetchNewTweets();
             }
         });
+
+        // Support implicit intent
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        String type = intent.getType();
+        if (Intent.ACTION_SEND.equals(action) && type != null) {
+            if ("text/plain".equals(type)) {
+                showComposeDialogFragment(intent);
+            }
+        }
     }
 
     @Override
@@ -87,7 +105,7 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_compose) {
-            showComposeDialogFragment();
+            showComposeDialogFragment(null);
             return true;
         }
 
@@ -95,8 +113,23 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
     }
 
     @Override
-    public void onTweetItemClickListener(View view, Tweet selectedArticle) {
+    public void onTweetItemClickListener(View view, Tweet selectedTweet, int position) {
+        showTweetDetailActivity(selectedTweet, position);
+    }
 
+    @Override
+    public void onReplyClickListener(View view, Tweet selectedTweet, int position) {
+
+    }
+
+    @Override
+    public void onRetweetClickListener(View view, Tweet selectedTweet, int position) {
+        statusActionHelper.handleRetweetStatusAction(selectedTweet, position);
+    }
+
+    @Override
+    public void onFavoriteClickListener(View view, Tweet selectedTweet, int position) {
+        statusActionHelper.handleFavoritedStatusAction(selectedTweet, position);
     }
 
     private void loadTweets() {
@@ -225,25 +258,123 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
         });
     }
 
+    /**
+     * Adds new tweet at the top of list
+     * @param tweet
+     */
+    private void addNewData(final Tweet tweet) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                tweetAdapter.addNewItem(tweet);
+                tweetAdapter.notifyDataSetChanged();
+                tweetRecyclerView.scrollToPosition(0);
+            }
+        });
+    }
+
+    /**
+     * Updates existing tweet data in adapter
+     * @param tweet
+     * @param adapterPosition
+     */
+    private void updateDataInAdapter(final Tweet tweet, final int adapterPosition) {
+        // refresh tweet info in adapter
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                tweetAdapter.updateData(adapterPosition, tweet);
+                tweetAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
     private void stopRefreshing() {
         swipeRefreshTweetLayout.setRefreshing(false);
     }
 
-    private void showComposeDialogFragment() {
-        ComposeDialogFragment dialogFragment = ComposeDialogFragment.newInstance("Compose new tweet", this);
+    private void showComposeDialogFragment(Intent intent) {
+        ComposeDialogFragment dialogFragment = ComposeDialogFragment.newInstance("Compose new tweet", this, intent);
         dialogFragment.show(getFragmentManager(), "Compose");
+    }
+
+    private void showTweetDetailActivity(Tweet selectedTweet, int position) {
+        Intent intent = new Intent(this, TweetDetailActivity.class);
+        intent.putExtra(TweetDetailActivity.ARG_SELECTED_TWEET, Parcels.wrap(selectedTweet));
+        intent.putExtra(TweetDetailActivity.ARG_SELECTED_TWEET_POS, position);
+        startActivityForResult(intent, TWEET_DETAIL_STATUS);
     }
 
     @Override
     public void onPostCompleted(Tweet createdTweet) {
-        tweetAdapter.addNewItem(createdTweet);
-        tweetAdapter.notifyDataSetChanged();
-        tweetRecyclerView.scrollToPosition(0);
+        addNewData(createdTweet);
     }
 
     @Override
     public void onPostFailure(Throwable throwable) {
         Log.e(TAG, "onPostFailure:: Failed to post tweet: " + throwable.getMessage(), throwable);
         Toast.makeText(this, "Failed to post tweet. Error: " + throwable.getMessage(), Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case TWEET_DETAIL_STATUS:
+                if (resultCode == RESULT_OK) handleTweetDetailResult(data);
+                break;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void handleTweetDetailResult(Intent data) {
+        Tweet tweet = Parcels.unwrap(data.getParcelableExtra(TweetDetailActivity.ARG_SELECTED_TWEET));
+        int position = data.getIntExtra(TweetDetailActivity.ARG_SELECTED_TWEET_POS, -1);
+
+        if (data.getBooleanExtra(TweetDetailActivity.ARG_IS_TWEET_MODIFIED, false)) {
+            // refresh tweet info in adapter
+            updateDataInAdapter(tweet, position);
+        }
+        if (data.getBooleanExtra(TweetDetailActivity.ARG_IS_TWEET_REPLIED, false)) {
+            // insert tweet info in adapter
+            Tweet repliedTweet = Parcels.unwrap(data.getParcelableExtra(TweetDetailActivity.ARG_REPLIED_TWEET_INFO));
+            addNewData(repliedTweet);
+        }
+    }
+
+    @Override
+    public void onRetweetActionSuccess(Tweet tweet, boolean isUndoAction, int adapterPosition) {
+        if (!isUndoAction) {
+            //
+            Tweet originalTweet = tweetAdapter.getItemAt(adapterPosition);
+            originalTweet.setRetweeted(tweet.isRetweeted());
+            originalTweet.setRetweetCount(tweet.getRetweetCount());
+
+            updateDataInAdapter(originalTweet, adapterPosition);
+
+        } else {
+            // refresh tweet info in adapter
+            int count = tweet.getRetweetCount();
+            tweet.setRetweetCount(--count);
+            tweet.setRetweeted(false);
+            updateDataInAdapter(tweet, adapterPosition);
+        }
+
+        Toast.makeText(this, "Retweet status updated.", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onRetweetActionFailure(String error, boolean isUndoAction) {
+        Log.e(TAG, "Failed to update retweet status. Error: " + error);
+    }
+
+    @Override
+    public void onFavoritedActionSuccess(Tweet tweet, boolean isUndoAction, int adapterPosition) {
+        updateDataInAdapter(tweet, adapterPosition); // refresh tweet info in adapter
+        Toast.makeText(this, "Favorite status updated.", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onFavoritedActionFailure(String error, boolean isUndoAction) {
+        Log.e(TAG, "Failed to update favorite status. Error: " + error);
     }
 }

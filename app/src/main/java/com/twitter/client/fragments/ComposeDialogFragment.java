@@ -2,6 +2,7 @@ package com.twitter.client.fragments;
 
 import android.app.DialogFragment;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
@@ -26,7 +27,6 @@ import com.twitter.client.network.response.models.Tweet;
 import com.twitter.client.network.response.models.User;
 import com.twitter.client.transformations.CircularTransformation;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import cz.msebera.android.httpclient.Header;
@@ -39,9 +39,9 @@ import cz.msebera.android.httpclient.Header;
 public class ComposeDialogFragment extends DialogFragment {
     private static String TAG = ComposeDialogFragment.class.getSimpleName();
     private static int CHAR_MAX_LIMIT = 140;
+    public static final String ARG_IS_IMPLICIT = "IMPLICIT_INVOCATION";
 
     private int charCounter = 0;
-
     private TextView handleText;
     private EditText composeText;
     private TextView screenNameText;
@@ -57,10 +57,19 @@ public class ComposeDialogFragment extends DialogFragment {
 
     public ComposeDialogFragment() {}
 
-    public static ComposeDialogFragment newInstance(String dialogTitle, TweetPostCompletionListener listener) {
+    public static ComposeDialogFragment newInstance(String dialogTitle, TweetPostCompletionListener listener, Intent implicitIntent) {
         ComposeDialogFragment frag = new ComposeDialogFragment();
         Bundle args = new Bundle();
         args.putString("title", dialogTitle);
+
+        if (implicitIntent != null) {
+            args.putBoolean(ARG_IS_IMPLICIT, true);
+            args.putString(Intent.EXTRA_SUBJECT, implicitIntent.getStringExtra(Intent.EXTRA_SUBJECT));
+            args.putString(Intent.EXTRA_TEXT, implicitIntent.getStringExtra(Intent.EXTRA_TEXT));
+            args.putParcelable(Intent.EXTRA_STREAM, implicitIntent.getParcelableExtra(Intent.EXTRA_STREAM));
+        } else {
+            args.putBoolean(ARG_IS_IMPLICIT, false);
+        }
         frag.setArguments(args);
         postCompletionListener = listener;
         return frag;
@@ -168,6 +177,14 @@ public class ComposeDialogFragment extends DialogFragment {
                     .bitmapTransform(new CircularTransformation(context))
                     .placeholder(R.drawable.placeholder_image)
                     .into(avatarImageView);
+        }
+
+        Bundle bundle = getArguments();
+        if (bundle.getBoolean(ARG_IS_IMPLICIT)) {
+            // then pre-fill the text and title of the web page when composing a tweet
+            String titleOfPage = bundle.getString(Intent.EXTRA_SUBJECT);
+            String urlOfPage = bundle.getString(Intent.EXTRA_TEXT);
+            composeText.setText(titleOfPage + " " + urlOfPage);
         }
     }
 
