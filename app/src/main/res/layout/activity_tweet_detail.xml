@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/white"
+        android:fitsSystemWindows="true"
+        tools:context="com.twitter.client.activities.TweetDetailActivity">
+
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/AppTheme.AppBarOverlay">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:minHeight="?attr/actionBarSize"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:titleTextColor="@android:color/white"
+            android:background="?attr/colorAccent" />
+
+    </android.support.design.widget.AppBarLayout>
+
+    <include android:id="@+id/detail_layout" layout="@layout/content_tweet_detail" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/detail_layout"
+        android:layout_gravity="bottom">
+
+        <EditText
+            android:id="@+id/compose_edit_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minLines="1"
+            android:maxLength="140"
+            android:background="@drawable/layout_top_border"
+            android:textSize="@dimen/medium_text_size"
+            android:hint="@string/detail_compose_hint_text"
+            android:paddingTop="@dimen/layout_margin"
+            android:paddingBottom="@dimen/layout_margin"
+            android:cursorVisible="false" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/compose_edit_text"
+            android:gravity="right"
+            android:background="@drawable/layout_button_top_border">
+
+            <TextView
+                android:id="@+id/char_limit_counter_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/medium_text_size"
+                android:textColor="@color/colorDarkGray"
+                android:layout_gravity="center_vertical"
+                android:layout_marginRight="@dimen/layout_margin"/>
+
+            <Button
+                android:id="@+id/save_tweet_reply"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tweet_button_text"
+                android:textColor="@color/colorAccent"
+                android:background="@drawable/layout_button_top_border"
+                android:textSize="@dimen/small_text_size"
+                android:layout_gravity="center_vertical" />
+
+        </LinearLayout>
+    </RelativeLayout>
+
+</android.support.design.widget.CoordinatorLayout>

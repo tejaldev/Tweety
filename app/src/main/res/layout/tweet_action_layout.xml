@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <LinearLayout
+        android:id="@+id/action_layout"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/main_layout"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:layout_marginTop="@dimen/padding_text"
+        android:layout_marginBottom="@dimen/layout_margin">
+
+        <ImageButton
+            android:id="@+id/reply_tweet_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:background="@null"
+            android:src="@drawable/ic_reply_tweet"
+            android:layout_marginRight="@dimen/activity_horizontal_margin"
+            android:paddingRight="@dimen/padding_text"/>
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+            <ImageButton
+                android:id="@+id/re_tweet_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:src="@drawable/ic_re_tweet"
+                android:layout_marginRight="@dimen/layout_margin" />
+
+            <TextView
+                android:id="@+id/re_tweet_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/small_text_size"
+                android:textColor="@color/colorDarkGray"
+                android:layout_toRightOf="@id/re_tweet_button"
+                android:layout_toEndOf="@id/re_tweet_button" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+            <ImageButton
+                android:id="@+id/fav_tweet_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:src="@drawable/ic_fav_tweet"
+                android:layout_marginRight="@dimen/layout_margin" />
+
+            <TextView
+                android:id="@+id/fav_tweet_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/small_text_size"
+                android:textColor="@color/colorDarkGray"
+                android:layout_toRightOf="@id/fav_tweet_button"
+                android:layout_toEndOf="@id/fav_tweet_button" />
+        </RelativeLayout>
+    </LinearLayout>
+
+</merge>

@@ -9,4 +9,5 @@
 
 
     <color name="colorDarkGray">#545454</color>
+    <color name="colorBorder">#dedcdc</color>
 </resources>
