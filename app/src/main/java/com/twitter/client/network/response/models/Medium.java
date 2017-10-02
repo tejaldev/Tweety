@@ -19,6 +19,9 @@ public class Medium {
     //@SerializedName("type")
     private String type;
 
+    //@SerializedName("video_info")
+    private VideoInfo videoInfo;
+
     public long getId() {
         return id;
     }
@@ -51,4 +54,11 @@ public class Medium {
         this.type = type;
     }
 
+    public VideoInfo getVideoInfo() {
+        return videoInfo;
+    }
+
+    public void setVideoInfo(VideoInfo videoInfo) {
+        this.videoInfo = videoInfo;
+    }
 }

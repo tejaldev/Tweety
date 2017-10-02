@@ -12,6 +12,7 @@ import org.json.JSONObject;
 import org.parceler.Parcel;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Parcel
@@ -28,6 +29,8 @@ public class Tweet {
 
     //@SerializedName("entities")
     private Entities entities;
+
+    private Entities extendedEntities;
 
     //@SerializedName("user")
     private User user;
@@ -76,6 +79,14 @@ public class Tweet {
 
     public void setEntities(Entities entities) {
         this.entities = entities;
+    }
+
+    public Entities getExtendedEntities() {
+        return extendedEntities;
+    }
+
+    public void setExtendedEntities(Entities extendedEntities) {
+        this.extendedEntities = extendedEntities;
     }
 
     public User getUser() {
@@ -135,7 +146,7 @@ public class Tweet {
 
     public static List<Tweet> parseTweetListFromJson(JSONArray jsonArray) {
         List<Tweet> tweets = new ArrayList<>();
-
+        List<Long> idsList = new ArrayList<>();
         for (int i = 0; i < jsonArray.length(); i++) {
 
             // Deserialize json into object fields
@@ -144,11 +155,13 @@ public class Tweet {
 
                 Tweet tweet = parseTweetFromJson(jsonObject);
                 tweets.add(tweet);
+                idsList.add(tweet.id);
             } catch (JSONException e) {
                 e.printStackTrace();
                 return null;
             }
         }
+        calculateMinMaxId(idsList);
         // Return new object
         return tweets;
     }
@@ -161,12 +174,6 @@ public class Tweet {
             tweet = new Tweet();
 
             tweet.id = jsonObject.optLong("id");
-
-            if (tweet.id < TweetApplication.getCurrMinTweetId()) {
-                TweetApplication.setCurrMinTweetId(tweet.id);
-            } else if (tweet.id > TweetApplication.getCurrMaxTweetId()) {
-                TweetApplication.setCurrMaxTweetId(tweet.id);
-            }
 
             // for relative timestamp
             tweet.createdAt = jsonObject.optString("created_at");
@@ -202,16 +209,83 @@ public class Tweet {
 
                     Medium media = new Medium();
                     media.setMediaUrl(mediaObject.optString("media_url"));
+                    media.setType(mediaObject.optString("type"));
                     mediaList.add(media);
                 }
                 entities.setMedia(mediaList);
                 tweet.setEntities(entities);
             }
+
+
+            // extract extended media urls -->  video urls
+            JSONObject extendedEntitiesObj = jsonObject.optJSONObject("extended_entities");
+            if (extendedEntitiesObj != null) {
+                JSONArray extMediaArray = extendedEntitiesObj.optJSONArray("media");
+                Entities entities = new Entities();
+                List<Medium> mediaList = new ArrayList<>();
+                for (int j = 0; j < extMediaArray.length(); j++) {
+                    JSONObject mediaObject = extMediaArray.optJSONObject(j);
+
+                    Medium extendedMedia = new Medium();
+                    extendedMedia.setMediaUrl(mediaObject.optString("media_url"));
+                    extendedMedia.setType(mediaObject.optString("type"));
+
+                    // video
+                    JSONObject videoObject = mediaObject.optJSONObject("video_info");
+                    if (videoObject != null) {
+                        VideoInfo videoInfo = new VideoInfo();
+                        videoInfo.setDurationMillis(videoObject.optLong("duration_millis"));
+
+
+                        // get variants list
+                        List<Variant> variantList = new ArrayList<>();
+                        JSONArray variantsArray = videoObject.optJSONArray("variants");
+                        for (int i = 0; i < variantsArray.length(); i++) {
+                            JSONObject variantsObject = variantsArray.optJSONObject(i);
+                            Variant variant = new Variant();
+                            variant.setUrl(variantsObject.optString("url"));
+                            variant.setBitrate(variantsObject.optLong("bitrate"));
+                            variant.setContentType(variantsObject.optString("content_type"));
+                            variantList.add(variant);
+                        }
+                        videoInfo.setVariants(variantList);
+                        extendedMedia.setVideoInfo(videoInfo);
+                    }
+
+                    // add to list
+                    mediaList.add(extendedMedia);
+                }
+                entities.setMedia(mediaList);
+                tweet.setExtendedEntities(entities);
+            } // end parsing extended object
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
         // Return new object
         return tweet;
+    }
+
+    private static void calculateMinMaxId(List<Long> idsList) {
+        if (idsList != null && idsList.size() > 0) {
+
+            // idsList.get(0) -> has max
+            // idsList.get(size - 1) -> has min
+            Collections.sort(idsList, Collections.reverseOrder());
+
+            long maxId = idsList.get(0);
+            long minId = idsList.get(idsList.size() - 1);
+
+            if (TweetApplication.getCurrMinTweetId() != -1 && minId < TweetApplication.getCurrMinTweetId()) {
+                TweetApplication.setCurrMinTweetId(minId);
+            } else {
+                TweetApplication.setCurrMinTweetId(minId);
+            }
+
+            if (maxId > TweetApplication.getCurrMaxTweetId()) {
+                TweetApplication.setCurrMaxTweetId(maxId);
+            }
+        }
     }
 }

@@ -33,8 +33,8 @@ public class TweetApplication extends Application {
 		FlowLog.setMinimumLoggingLevel(FlowLog.Level.V);
 
 		TweetApplication.context = this;
-        TweetApplication.currMinTweetId = Long.MAX_VALUE;
-        TweetApplication.currMaxTweetId = Long.MIN_VALUE;
+        TweetApplication.currMinTweetId = -1;
+        TweetApplication.currMaxTweetId = -1;
 	}
 
 	public static TweetClient getTweetRestClient() {

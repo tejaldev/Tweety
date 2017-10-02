@@ -3,6 +3,7 @@ package com.twitter.client;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -87,6 +88,14 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
                 showComposeDialogFragment(intent);
             }
         }
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showComposeDialogFragment(null);
+            }
+        });
     }
 
     @Override
@@ -104,10 +113,10 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_compose) {
-            showComposeDialogFragment(null);
-            return true;
-        }
+//        if (id == R.id.action_compose) {
+//            showComposeDialogFragment(null);
+//            return true;
+//        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -119,7 +128,7 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
 
     @Override
     public void onReplyClickListener(View view, Tweet selectedTweet, int position) {
-
+        showTweetDetailActivity(selectedTweet, position);
     }
 
     @Override

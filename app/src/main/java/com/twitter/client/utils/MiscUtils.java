@@ -30,7 +30,28 @@ public class MiscUtils {
         try {
             long dateMillis = sf.parse(rawJsonDate).getTime();
             relativeDate = DateUtils.getRelativeTimeSpanString(dateMillis,
-                    System.currentTimeMillis(), DateUtils.SECOND_IN_MILLIS).toString();
+                    System.currentTimeMillis(), DateUtils.SECOND_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE).toString();
+
+            if (relativeDate.contains(" sec")) {
+                relativeDate = relativeDate.substring(0, relativeDate.indexOf(" sec"));
+                relativeDate += "s";
+            } else if (relativeDate.contains(" hour")) {
+                relativeDate = relativeDate.substring(0, relativeDate.indexOf(" hour"));
+                relativeDate += "h";
+            } else if (relativeDate.contains(" min")) {
+                relativeDate = relativeDate.substring(0, relativeDate.indexOf(" min"));
+                relativeDate += "m";
+            } else if (relativeDate.contains(" day")) {
+                relativeDate = relativeDate.substring(0, relativeDate.indexOf(" day"));
+                relativeDate += "d";
+            } else if (relativeDate.contains(" week")) {
+                relativeDate = relativeDate.substring(0, relativeDate.indexOf(" week"));
+                relativeDate += "w";
+            } else if (relativeDate.contains(" year")) {
+                relativeDate = relativeDate.substring(0, relativeDate.indexOf(" year"));
+                relativeDate += "y";
+            }
+
         } catch (ParseException e) {
             e.printStackTrace();
         }
