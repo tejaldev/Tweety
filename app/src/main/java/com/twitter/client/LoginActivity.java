@@ -10,7 +10,7 @@ import android.widget.Toast;
 import com.codepath.oauth.OAuthLoginActionBarActivity;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.twitter.client.network.TweetClient;
-import com.twitter.client.network.response.models.User;
+import com.twitter.client.storage.models.User;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

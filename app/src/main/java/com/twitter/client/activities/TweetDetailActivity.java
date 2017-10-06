@@ -2,6 +2,7 @@ package com.twitter.client.activities;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -20,9 +21,12 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
+import com.raizlabs.android.dbflow.structure.database.transaction.Transaction;
 import com.twitter.client.R;
 import com.twitter.client.TweetApplication;
-import com.twitter.client.network.response.models.Tweet;
+import com.twitter.client.adapters.TweetStatusActionHelper;
+import com.twitter.client.storage.TweetDatabaseHelper;
+import com.twitter.client.storage.models.Tweet;
 import com.twitter.client.transformations.CircularTransformation;
 
 import org.json.JSONObject;
@@ -30,7 +34,7 @@ import org.parceler.Parcels;
 
 import cz.msebera.android.httpclient.Header;
 
-public class TweetDetailActivity extends AppCompatActivity {
+public class TweetDetailActivity extends AppCompatActivity implements TweetStatusActionHelper.OnStatusUpdatedListener {
     public static String TAG = TweetDetailActivity.class.getSimpleName();
     public static final String ARG_SELECTED_TWEET = "SELECTED_TWEET";
     public static final String ARG_SELECTED_TWEET_POS = "SELECTED_TWEET_POS";
@@ -61,6 +65,7 @@ public class TweetDetailActivity extends AppCompatActivity {
     private ImageButton favTweetButton;
     private ImageButton replyTweetButton;
     private ImageButton retweetTweetButton;
+    private TweetStatusActionHelper statusActionHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +76,7 @@ public class TweetDetailActivity extends AppCompatActivity {
         toolbar.setTitle(R.string.detail_toolbar_title);
         toolbar.setNavigationIcon(R.drawable.ic_back_nav);
         setSupportActionBar(toolbar);
+        statusActionHelper = new TweetStatusActionHelper(this);
 
         // get selectedTweet
         Intent intent = getIntent();
@@ -138,9 +144,9 @@ public class TweetDetailActivity extends AppCompatActivity {
                 .placeholder(R.drawable.placeholder_image)
                 .into(avatarImageView);
 
-        if (selectedTweet.getEntities() != null && selectedTweet.getEntities().getMedia() != null && !selectedTweet.getEntities().getMedia().isEmpty()) {
+        if (selectedTweet != null && selectedTweet.getMediaList() != null && !selectedTweet.getMediaList().isEmpty()) {
             Glide.with(this)
-                    .load(Uri.parse(selectedTweet.getEntities().getMedia().get(0).getMediaUrl()))
+                    .load(Uri.parse(selectedTweet.getMediaList().get(0).getMediaUrl()))
                     .placeholder(R.drawable.placeholder_image)
                     .into(mainImageView);
         }
@@ -179,7 +185,8 @@ public class TweetDetailActivity extends AppCompatActivity {
         retweetTweetButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                handleRetweetButtonClick();
+                statusActionHelper.handleRetweetStatusAction(selectedTweet, position);
+                //handleRetweetButtonClick();
             }
         });
 
@@ -187,7 +194,8 @@ public class TweetDetailActivity extends AppCompatActivity {
         favTweetButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                handleFavtweetButtonClick();
+                statusActionHelper.handleFavoritedStatusAction(selectedTweet, position);
+                //handleFavtweetButtonClick();
             }
         });
     }
@@ -241,136 +249,69 @@ public class TweetDetailActivity extends AppCompatActivity {
         composeText.getText().clear();
     }
 
-    private void handleRetweetButtonClick() {
-        if (selectedTweet.isRetweeted()) {
-            // user wants to undo retweet action
-            Runnable runnableCode = new Runnable() {
-                @Override
-                public void run() {
-                    TweetApplication.getTweetRestClient().postUnReTweetStatus(String.valueOf(selectedTweet.getId()), null, new JsonHttpResponseHandler() {
-                        @Override
-                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                            Log.d(TAG, "UndoRetweet:: Undo retweet successful.");
-                            Toast.makeText(TweetDetailActivity.this, "Undo retweet successful.", Toast.LENGTH_SHORT).show();
-
-                            isTweetModified = true;
-                            selectedTweet = Tweet.parseTweetFromJson(response);
-                            toggleRetweetButton();
-                        }
-
-                        @Override
-                        public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                            Log.e(TAG, "UndoRetweet:: Failed to undo retweet. Error: " + responseString, throwable);
-                        }
-
-                        @Override
-                        public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                            Log.e(TAG, "UndoRetweet:: Failed to undo retweet. Error: " + errorResponse, throwable);
-                        }
-                    });
-                }
-            };
-            new Thread(runnableCode).run();
+    @Override
+    public void onRetweetActionSuccess(Tweet tweet, boolean isUndoAction, int adapterPosition) {
+        Tweet tweetToUpdate;
+        if (!isUndoAction) {
+            //
+            tweetToUpdate = selectedTweet;
+            tweetToUpdate.setRetweeted(tweet.isRetweeted());
+            tweetToUpdate.setRetweetCount(tweet.getRetweetCount());
 
         } else {
-            // user wants to perform retweet action
-            Runnable runnableCode = new Runnable() {
-                @Override
-                public void run() {
-                    TweetApplication.getTweetRestClient().postReTweetStatus(String.valueOf(selectedTweet.getId()), null, new JsonHttpResponseHandler() {
-                        @Override
-                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                            Log.d(TAG, "Retweet:: Retweet successful.");
-                            Toast.makeText(TweetDetailActivity.this, "Retweet successful.", Toast.LENGTH_SHORT).show();
-
-                            isTweetModified = true;
-                            selectedTweet = Tweet.parseTweetFromJson(response);
-                            toggleRetweetButton();
-                        }
-
-                        @Override
-                        public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                            Log.e(TAG, "Retweet:: Failed to retweet. Error: " + responseString, throwable);
-                        }
-
-                        @Override
-                        public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                            Log.e(TAG, "Retweet:: Failed to retweet. Error: " + errorResponse, throwable);
-                        }
-                    });
-                }
-            };
-            new Thread(runnableCode).run();
+            // refresh tweet info in adapter
+            int count = tweet.getRetweetCount();
+            tweet.setRetweetCount(--count);
+            tweet.setRetweeted(false);
+            tweetToUpdate = tweet;
         }
+        isTweetModified = true;
+        selectedTweet = tweetToUpdate;
+        toggleRetweetButton();
+        Toast.makeText(this, "Retweet status updated.", Toast.LENGTH_SHORT).show();
+
+        TweetDatabaseHelper.getInstance().saveTweetToDB(tweetToUpdate, new Transaction.Success() {
+            @Override
+            public void onSuccess(@NonNull Transaction transaction) {
+                Log.d(TAG, "Tweets saved to database.");
+            }
+        }, new Transaction.Error() {
+            @Override
+            public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+            }
+        });
     }
 
-    private void handleFavtweetButtonClick() {
-        if (selectedTweet.isFavorited()) {
-            // user wants to undo favorite action
-            Runnable runnableCode = new Runnable() {
-                @Override
-                public void run() {
-                    RequestParams params = new RequestParams();
-                    params.put("id", String.valueOf(selectedTweet.getId()));
-                    TweetApplication.getTweetRestClient().postFavoritesDestroyStatus(params, new JsonHttpResponseHandler() {
-                        @Override
-                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                            Log.d(TAG, "UndoFavorite:: Undo favorite successful.");
-                            Toast.makeText(TweetDetailActivity.this, "Undo favorite successful.", Toast.LENGTH_SHORT).show();
-
-                            isTweetModified = true;
-                            selectedTweet = Tweet.parseTweetFromJson(response);
-                            toggleFavtweetButton();
-                        }
-
-                        @Override
-                        public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                            Log.e(TAG, "UndoFavorite:: Failed to undo retweet. Error: " + responseString, throwable);
-                        }
-
-                        @Override
-                        public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                            Log.e(TAG, "UndoFavorite:: Failed to undo retweet. Error: " + errorResponse, throwable);
-                        }
-                    });
-                }
-            };
-            new Thread(runnableCode).run();
-
-        } else {
-            // user wants to perform favorite action
-            Runnable runnableCode = new Runnable() {
-                @Override
-                public void run() {
-                    RequestParams params = new RequestParams();
-                    params.put("id", String.valueOf(selectedTweet.getId()));
-                    TweetApplication.getTweetRestClient().postFavoritesCreateStatus(params, new JsonHttpResponseHandler() {
-                        @Override
-                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                            Log.d(TAG, "Favorite:: Favorite action successful.");
-                            Toast.makeText(TweetDetailActivity.this, "Favorite action successful.", Toast.LENGTH_SHORT).show();
-
-                            isTweetModified = true;
-                            selectedTweet = Tweet.parseTweetFromJson(response);
-                            toggleFavtweetButton();
-                        }
-
-                        @Override
-                        public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                            Log.e(TAG, "Favorite:: Failed to favorite. Error: " + responseString, throwable);
-                        }
-
-                        @Override
-                        public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                            Log.e(TAG, "Favorite:: Failed to favorite. Error: " + errorResponse, throwable);
-                        }
-                    });
-                }
-            };
-            new Thread(runnableCode).run();
-        }
+    @Override
+    public void onRetweetActionFailure(String error, boolean isUndoAction) {
+        Log.e(TAG, "Failed to update retweet status. Error: " + error);
     }
 
+    @Override
+    public void onFavoritedActionSuccess(Tweet tweet, boolean isUndoAction, int adapterPosition) {
+        isTweetModified = true;
+        selectedTweet = tweet;
+        toggleFavtweetButton();
+        Toast.makeText(this, "Favorite status updated.", Toast.LENGTH_SHORT).show();
+
+        TweetDatabaseHelper.getInstance().saveTweetToDB(tweet, new Transaction.Success() {
+            @Override
+            public void onSuccess(@NonNull Transaction transaction) {
+                Log.d(TAG, "Tweets saved to database.");
+            }
+        }, new Transaction.Error() {
+            @Override
+            public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public void onFavoritedActionFailure(String error, boolean isUndoAction) {
+        Log.e(TAG, "Failed to update favorite status. Error: " + error);
+    }
 
     public void handleReplyTweetStatusAction(final String status) {
         Runnable runnableCode = new Runnable() {
@@ -378,7 +319,7 @@ public class TweetDetailActivity extends AppCompatActivity {
             public void run() {
                 RequestParams params = new RequestParams();
                 params.put("status", status);
-                params.put("in_reply_to_status_id", String.valueOf(selectedTweet.getId()));
+                params.put("in_reply_to_status_id", String.valueOf(selectedTweet.getTweetId()));
                 TweetApplication.getTweetRestClient().postReplyToTweet(params, new JsonHttpResponseHandler() {
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
@@ -386,8 +327,20 @@ public class TweetDetailActivity extends AppCompatActivity {
                         Toast.makeText(TweetDetailActivity.this, "Reply posted successfully.", Toast.LENGTH_SHORT).show();
 
                         isReplied = true;
-                        repliedTweet = Tweet.parseTweetFromJson(response);
+                        repliedTweet = new Tweet(response);
                         resetComposeText();
+
+                        TweetDatabaseHelper.getInstance().saveTweetToDB(repliedTweet, new Transaction.Success() {
+                            @Override
+                            public void onSuccess(@NonNull Transaction transaction) {
+                                Log.d(TAG, "Tweets saved to database.");
+                            }
+                        }, new Transaction.Error() {
+                            @Override
+                            public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                                Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+                            }
+                        });
                     }
 
                     @Override

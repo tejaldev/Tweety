@@ -11,7 +11,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.twitter.client.R;
-import com.twitter.client.network.response.models.Tweet;
+import com.twitter.client.storage.models.Tweet;
 import com.twitter.client.transformations.CircularTransformation;
 
 import java.util.List;
@@ -129,7 +129,7 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
                 // setup additional fields
                 Glide.with(holder.itemView.getContext())
-                        .load(Uri.parse(tweetList.get(position).getEntities().getMedia().get(0).getMediaUrl()))
+                        .load(Uri.parse(tweetList.get(position).getMediaList().get(0).getMediaUrl()))
                         .placeholder(R.drawable.placeholder_image)
                         .into(imageTweetViewHolder.mainImageView);
                 break;

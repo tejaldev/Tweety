@@ -5,7 +5,7 @@ import android.util.Log;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 import com.twitter.client.TweetApplication;
-import com.twitter.client.network.response.models.Tweet;
+import com.twitter.client.storage.models.Tweet;
 
 import org.json.JSONObject;
 
@@ -14,7 +14,7 @@ import cz.msebera.android.httpclient.Header;
 /**
  * API helper for posting retweet and fav status
  *
- * Created by tejalpar on 10/1/17.
+ * @author tejalpar
  */
 public class TweetStatusActionHelper {
     public static String TAG = TweetStatusActionHelper.class.getSimpleName();
@@ -41,11 +41,11 @@ public class TweetStatusActionHelper {
             Runnable runnableCode = new Runnable() {
                 @Override
                 public void run() {
-                    TweetApplication.getTweetRestClient().postUnReTweetStatus(String.valueOf(selectedTweet.getId()), null, new JsonHttpResponseHandler() {
+                    TweetApplication.getTweetRestClient().postUnReTweetStatus(String.valueOf(selectedTweet.getTweetId()), null, new JsonHttpResponseHandler() {
                         @Override
-                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                        public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
                             Log.d(TAG, "UndoRetweet:: Undo retweet successful.");
-                            statusUpdatedListener.onRetweetActionSuccess(Tweet.parseTweetFromJson(response), true, adapterPosition);
+                            statusUpdatedListener.onRetweetActionSuccess(new Tweet(response), true, adapterPosition);
                         }
 
                         @Override
@@ -69,11 +69,12 @@ public class TweetStatusActionHelper {
             Runnable runnableCode = new Runnable() {
                 @Override
                 public void run() {
-                    TweetApplication.getTweetRestClient().postReTweetStatus(String.valueOf(selectedTweet.getId()), null, new JsonHttpResponseHandler() {
+                    TweetApplication.getTweetRestClient().postReTweetStatus(String.valueOf(selectedTweet.getTweetId()), null, new JsonHttpResponseHandler() {
                         @Override
-                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                        public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
                             Log.d(TAG, "Retweet:: Retweet successful.");
-                            statusUpdatedListener.onRetweetActionSuccess(Tweet.parseTweetFromJson(response), false, adapterPosition);
+                            statusUpdatedListener.onRetweetActionSuccess(new Tweet(response), false, adapterPosition);
+                            //statusUpdatedListener.onRetweetActionSuccess(Tweet.parseTweetFromJson(response), false, adapterPosition);
                         }
 
                         @Override
@@ -101,12 +102,12 @@ public class TweetStatusActionHelper {
                 @Override
                 public void run() {
                     RequestParams params = new RequestParams();
-                    params.put("id", String.valueOf(selectedTweet.getId()));
+                    params.put("id", String.valueOf(selectedTweet.getTweetId()));
                     TweetApplication.getTweetRestClient().postFavoritesDestroyStatus(params, new JsonHttpResponseHandler() {
                         @Override
-                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                        public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
                             Log.d(TAG, "UndoFavorite:: Undo favorite successful.");
-                            statusUpdatedListener.onFavoritedActionSuccess(Tweet.parseTweetFromJson(response), true, adapterPosition);
+                            statusUpdatedListener.onFavoritedActionSuccess(new Tweet(response), true, adapterPosition);
                         }
 
                         @Override
@@ -131,12 +132,12 @@ public class TweetStatusActionHelper {
                 @Override
                 public void run() {
                     RequestParams params = new RequestParams();
-                    params.put("id", String.valueOf(selectedTweet.getId()));
+                    params.put("id", String.valueOf(selectedTweet.getTweetId()));
                     TweetApplication.getTweetRestClient().postFavoritesCreateStatus(params, new JsonHttpResponseHandler() {
                         @Override
-                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                        public void onSuccess(int statusCode, Header[] headers, final JSONObject response) {
                             Log.d(TAG, "Favorite:: Favorite action successful.");
-                            statusUpdatedListener.onFavoritedActionSuccess(Tweet.parseTweetFromJson(response), false, adapterPosition);
+                            statusUpdatedListener.onFavoritedActionSuccess(new Tweet(response), false, adapterPosition);
                         }
 
                         @Override

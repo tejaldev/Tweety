@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -21,10 +22,12 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
+import com.raizlabs.android.dbflow.structure.database.transaction.Transaction;
 import com.twitter.client.R;
 import com.twitter.client.TweetApplication;
-import com.twitter.client.network.response.models.Tweet;
-import com.twitter.client.network.response.models.User;
+import com.twitter.client.storage.TweetDatabaseHelper;
+import com.twitter.client.storage.models.Tweet;
+import com.twitter.client.storage.models.User;
 import com.twitter.client.transformations.CircularTransformation;
 
 import org.json.JSONObject;
@@ -136,9 +139,22 @@ public class ComposeDialogFragment extends DialogFragment {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 Log.d(TAG, "postComposedTweet:: Tweet posted successfully.");
-                Toast.makeText(context, "Tweet posted successfully.", Toast.LENGTH_LONG).show();
-                postCompletionListener.onPostCompleted(getTweetFromResponse(response));
-                dismissDialog();
+                TweetDatabaseHelper.getInstance().saveTweetToDB(response, new Transaction.Success() {
+                    @Override
+                    public void onSuccess(@NonNull Transaction transaction) {
+                        Log.d(TAG, "Tweets saved to database.");
+                        Toast.makeText(context, "Tweet posted successfully.", Toast.LENGTH_LONG).show();
+                        postCompletionListener.onPostCompleted(Tweet.byId(TweetApplication.getCurrMaxTweetId()));
+                        dismissDialog();
+                    }
+                }, new Transaction.Error() {
+                    @Override
+                    public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                        Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+                        Toast.makeText(context, "Failed to save tweet to db.", Toast.LENGTH_LONG).show();
+                        postCompletionListener.onPostFailure(error);
+                    }
+                });
             }
 
             @Override
@@ -186,9 +202,5 @@ public class ComposeDialogFragment extends DialogFragment {
             String urlOfPage = bundle.getString(Intent.EXTRA_TEXT);
             composeText.setText(titleOfPage + " " + urlOfPage);
         }
-    }
-
-    private Tweet getTweetFromResponse(JSONObject response) {
-        return Tweet.parseTweetFromJson(response);
     }
 }
