@@ -3,6 +3,7 @@ package com.twitter.client;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -17,12 +18,15 @@ import android.widget.Toast;
 
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
+import com.raizlabs.android.dbflow.structure.database.transaction.Transaction;
 import com.twitter.client.activities.TweetDetailActivity;
 import com.twitter.client.adapters.TweetAdapter;
 import com.twitter.client.adapters.TweetStatusActionHelper;
 import com.twitter.client.fragments.ComposeDialogFragment;
 import com.twitter.client.listeners.EndlessRecyclerViewScrollListener;
-import com.twitter.client.network.response.models.Tweet;
+import com.twitter.client.storage.TweetDatabaseHelper;
+import com.twitter.client.storage.models.Tweet;
+import com.twitter.client.utils.MiscUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -142,28 +146,48 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
     }
 
     private void loadTweets() {
-        TweetApplication.getTweetRestClient().getHomeTimelineTweets(null, new JsonHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                Log.d(TAG, "loadTweets:: Response received successfully.");
-            }
+        //fetch tweets
+        //if no network then fetch from db
+        if (MiscUtils.isNetworkAvailable(this)) {
+            // fetch tweets
+            TweetApplication.getTweetRestClient().getHomeTimelineTweets(null, new JsonHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                    Log.d(TAG, "loadTweets:: Response received successfully.");
+                }
 
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
-                Log.d(TAG, "loadTweets:: Response received successfully.");
-                setupAdapter(Tweet.parseTweetListFromJson(response));
-            }
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                    Log.d(TAG, "loadTweets:: Response received successfully.");
+                    TweetDatabaseHelper.getInstance().saveTweetsToDB(response, new Transaction.Success() {
+                        @Override
+                        public void onSuccess(@NonNull Transaction transaction) {
+                            Log.d(TAG, "Tweets saved to database.");
+                            setupAdapter(com.twitter.client.storage.models.Tweet.getTweets());
+                        }
+                    }, new Transaction.Error() {
+                        @Override
+                        public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                            Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+                        }
+                    });
+                }
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                Log.e(TAG, "loadTweets:: Failed to receive api response: " + responseString, throwable);
-            }
+                @Override
+                public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                    Log.e(TAG, "loadTweets:: Failed to receive api response: " + responseString, throwable);
+                }
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                Log.e(TAG, "loadTweets:: Failed to receive api response: " + errorResponse, throwable);
-            }
-        });
+                @Override
+                public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                    Log.e(TAG, "loadTweets:: Failed to receive api response: " + errorResponse, throwable);
+                }
+            });
+
+        } else {
+            Toast.makeText(this, "No network available. Loading offline tweets.", Toast.LENGTH_LONG).show();
+            setupAdapter(com.twitter.client.storage.models.Tweet.getTweets());
+        }
     }
 
     private void makeDelayedNextPageRequests(final long maxId) {
@@ -181,7 +205,18 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
                         Log.d(TAG, "loadMoreTweets:: Response received successfully.");
-                        insertNewPageData(Tweet.parseTweetListFromJson(response));
+                        TweetDatabaseHelper.getInstance().saveTweetsToDB(response, new Transaction.Success() {
+                            @Override
+                            public void onSuccess(@NonNull Transaction transaction) {
+                                Log.d(TAG, "Tweets saved to database.");
+                                insertNewPageData(com.twitter.client.storage.models.Tweet.getOldTweets(maxId));
+                            }
+                        }, new Transaction.Error() {
+                            @Override
+                            public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                                Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+                            }
+                        });
                     }
 
                     @Override
@@ -213,8 +248,19 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
                         Log.d(TAG, "fetchNewTweets:: Response received successfully.");
-                        insertNewFetchedData(Tweet.parseTweetListFromJson(response));
-                        stopRefreshing();
+                        TweetDatabaseHelper.getInstance().saveTweetsToDB(response, new Transaction.Success() {
+                            @Override
+                            public void onSuccess(@NonNull Transaction transaction) {
+                                Log.d(TAG, "Tweets saved to database.");
+                                insertNewFetchedData(Tweet.getRecentTweets(TweetApplication.getCurrMaxTweetId()));
+                                stopRefreshing();
+                            }
+                        }, new Transaction.Error() {
+                            @Override
+                            public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                                Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+                            }
+                        });
                     }
 
                     @Override
@@ -352,13 +398,13 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
 
     @Override
     public void onRetweetActionSuccess(Tweet tweet, boolean isUndoAction, int adapterPosition) {
+        Tweet tweetToUpdate;
         if (!isUndoAction) {
             //
-            Tweet originalTweet = tweetAdapter.getItemAt(adapterPosition);
-            originalTweet.setRetweeted(tweet.isRetweeted());
-            originalTweet.setRetweetCount(tweet.getRetweetCount());
-
-            updateDataInAdapter(originalTweet, adapterPosition);
+            tweetToUpdate = tweetAdapter.getItemAt(adapterPosition);
+            tweetToUpdate.setRetweeted(tweet.isRetweeted());
+            tweetToUpdate.setRetweetCount(tweet.getRetweetCount());
+            updateDataInAdapter(tweetToUpdate, adapterPosition);
 
         } else {
             // refresh tweet info in adapter
@@ -366,9 +412,21 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
             tweet.setRetweetCount(--count);
             tweet.setRetweeted(false);
             updateDataInAdapter(tweet, adapterPosition);
+            tweetToUpdate = tweet;
         }
-
         Toast.makeText(this, "Retweet status updated.", Toast.LENGTH_SHORT).show();
+
+        TweetDatabaseHelper.getInstance().saveTweetToDB(tweetToUpdate, new Transaction.Success() {
+            @Override
+            public void onSuccess(@NonNull Transaction transaction) {
+                Log.d(TAG, "Tweets saved to database.");
+            }
+        }, new Transaction.Error() {
+            @Override
+            public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+            }
+        });
     }
 
     @Override
@@ -380,6 +438,17 @@ public class TweetListActivity extends AppCompatActivity implements TweetAdapter
     public void onFavoritedActionSuccess(Tweet tweet, boolean isUndoAction, int adapterPosition) {
         updateDataInAdapter(tweet, adapterPosition); // refresh tweet info in adapter
         Toast.makeText(this, "Favorite status updated.", Toast.LENGTH_SHORT).show();
+        TweetDatabaseHelper.getInstance().saveTweetToDB(tweet, new Transaction.Success() {
+            @Override
+            public void onSuccess(@NonNull Transaction transaction) {
+                Log.d(TAG, "Tweets saved to database.");
+            }
+        }, new Transaction.Error() {
+            @Override
+            public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+            }
+        });
     }
 
     @Override
