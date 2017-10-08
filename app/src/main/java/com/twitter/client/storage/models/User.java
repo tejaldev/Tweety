@@ -36,6 +36,21 @@ public class User extends BaseModel {
 	@Column
 	private String profileImageUrl;
 
+    @Column
+    private String profileBackgroundImageUrl;
+
+    @Column
+    private String profileBannerUrl;
+
+    @Column
+    private int followersCount;
+
+    @Column
+    private int followingCount;
+
+    @Column
+    private String description;
+
 
 	public User() {
 		super();
@@ -47,9 +62,14 @@ public class User extends BaseModel {
 
 		try {
             this.userId = jsonObject.optLong("id");
-			this.name = jsonObject.optString("name");
+            this.name = jsonObject.optString("name");
             this.screenName = jsonObject.optString("screen_name");
+            this.description = jsonObject.optString("description");
+            this.followingCount = jsonObject.optInt("friends_count");
+            this.followersCount = jsonObject.optInt("followers_count");
             this.profileImageUrl = jsonObject.optString("profile_image_url");
+            this.profileBannerUrl = jsonObject.optString("profile_banner_url");
+            this.profileBackgroundImageUrl = jsonObject.optString("profile_background_image_url");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -91,13 +111,58 @@ public class User extends BaseModel {
 		return "@" + this.screenName;
 	}
 
+    public String getProfileBackgroundImageUrl() {
+        return profileBackgroundImageUrl;
+    }
+
+    public void setProfileBackgroundImageUrl(String profileBackgroundImageUrl) {
+        this.profileBackgroundImageUrl = profileBackgroundImageUrl;
+    }
+
+    public int getFollowersCount() {
+        return followersCount;
+    }
+
+    public void setFollowersCount(int followersCount) {
+        this.followersCount = followersCount;
+    }
+
+    public int getFollowingCount() {
+        return followingCount;
+    }
+
+    public void setFollowingCount(int followingCount) {
+        this.followingCount = followingCount;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getProfileBannerUrl() {
+        return profileBannerUrl;
+    }
+
+    public void setProfileBannerUrl(String profileBannerUrl) {
+        this.profileBannerUrl = profileBannerUrl;
+    }
+
     // Helper method
 	public static User parseUserInfoFromJson(JSONObject responseObject) {
-		User user = new User();
-		user.userId = responseObject.optLong("id");
-		user.name = responseObject.optString("name");
-		user.screenName = responseObject.optString("screen_name");
-		user.profileImageUrl = responseObject.optString("profile_image_url");
+        User user = new User();
+        user.userId = responseObject.optLong("id");
+        user.name = responseObject.optString("name");
+        user.screenName = responseObject.optString("screen_name");
+        user.description = responseObject.optString("description");
+        user.followingCount = responseObject.optInt("friends_count");
+        user.followersCount = responseObject.optInt("followers_count");
+        user.profileImageUrl = responseObject.optString("profile_image_url");
+        user.profileBannerUrl = responseObject.optString("profile_banner_url");
+        user.profileBackgroundImageUrl = responseObject.optString("profile_background_image_url");
 
 		return user;
 	}

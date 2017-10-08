@@ -1,6 +1,5 @@
 package com.twitter.client.storage.models;
 
-import android.database.Cursor;
 import android.text.TextUtils;
 
 import com.raizlabs.android.dbflow.annotation.Column;
@@ -9,20 +8,14 @@ import com.raizlabs.android.dbflow.annotation.ForeignKey;
 import com.raizlabs.android.dbflow.annotation.OneToMany;
 import com.raizlabs.android.dbflow.annotation.PrimaryKey;
 import com.raizlabs.android.dbflow.annotation.Table;
-import com.raizlabs.android.dbflow.sql.language.IConditional;
 import com.raizlabs.android.dbflow.sql.language.Method;
 import com.raizlabs.android.dbflow.sql.language.SQLite;
 import com.raizlabs.android.dbflow.sql.language.Select;
 import com.raizlabs.android.dbflow.structure.BaseModel;
-import com.raizlabs.android.dbflow.structure.database.DatabaseWrapper;
-import com.twitter.client.models.SampleModel_Table;
-import com.twitter.client.network.response.models.Entities;
-import com.twitter.client.network.response.models.Medium;
 import com.twitter.client.storage.TweetDatabase;
 import com.twitter.client.utils.MiscUtils;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.parceler.Parcel;
 
@@ -74,6 +67,9 @@ public class Tweet extends BaseModel {
     @ColumnIgnore
     List<Media> mediaList;
 
+    @ColumnIgnore
+    List<UserMentions> mentionsList;
+
 	public Tweet() {
 		super();
 	}
@@ -108,6 +104,18 @@ public class Tweet extends BaseModel {
             // user
             JSONObject userObject = jsonObject.optJSONObject("user");
             this.user = new User(userObject);
+
+
+            // mentions
+            JSONArray mentionsArray = entitiesObj.optJSONArray("user_mentions");
+            if (mentionsArray != null) {
+                this.mentionsList = new ArrayList<>();
+                for (int j = 0; j < mentionsArray.length(); j++) {
+                    JSONObject userObj = mentionsArray.optJSONObject(j);
+                    UserMentions mentions = new UserMentions(userObj);
+                    this.mentionsList.add(mentions);
+                }
+            }
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -124,12 +132,31 @@ public class Tweet extends BaseModel {
         return mediaList;
     }
 
+    @OneToMany(methods = {OneToMany.Method.ALL}, variableName = "mentionsList")
+    public List<UserMentions> getMentionsList() {
+        if (mentionsList == null || mentionsList.isEmpty()) {
+            mentionsList = SQLite.select()
+                    .from(UserMentions.class)
+                    .where(UserMentions_Table.tweet_tweetId.eq(tweetId))
+                    .queryList();
+        }
+        return mentionsList;
+    }
+
     @Override
     public boolean save() {
         boolean result = super.save();
 
         if (mediaList != null && !mediaList.isEmpty()) {
             for (Media s : mediaList) {
+                s.setTweet(this);
+                s.save();
+            }
+        }
+
+
+        if (mentionsList != null && !mentionsList.isEmpty()) {
+            for (UserMentions s : mentionsList) {
                 s.setTweet(this);
                 s.save();
             }
@@ -241,6 +268,24 @@ public class Tweet extends BaseModel {
                 .from(Tweet.class)
                 .leftOuterJoin(Media.class)
                 .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
+                .orderBy(Tweet_Table.tweetId, false)
+                .queryList();
+    }
+
+    public static List<Tweet> getMentions(long userId) {
+//        return SQLite.select()
+//                .from(Tweet.class)
+//                .innerJoin(UserMentions.class)
+//                .on(Tweet_Table.tweetId.is(UserMentions_Table.tweet_tweetId))
+//                .queryList();
+
+        return SQLite.select()
+                .from(Tweet.class)
+                .leftOuterJoin(Media.class)
+                .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
+                .where(Tweet_Table.tweetId.in(SQLite.select(UserMentions_Table.tweet_tweetId)
+                        .from(UserMentions.class)
+                        .where(UserMentions_Table.user_userId.is(userId))))
                 .orderBy(Tweet_Table.tweetId, false)
                 .queryList();
     }
