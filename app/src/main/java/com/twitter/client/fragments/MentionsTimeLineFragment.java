@@ -119,8 +119,8 @@ public class MentionsTimeLineFragment extends TweetTimeLineBaseFragment  {
             handler.postDelayed(runnableCode, 1000);
 
         } else {
-            Toast.makeText(this.getContext(), "No network available. Loading offline tweets.", Toast.LENGTH_LONG).show();
-            setupAdapter(com.twitter.client.storage.models.Tweet.getTweets());
+            Toast.makeText(this.getContext(), "No network available. Loading offline mentions.", Toast.LENGTH_LONG).show();
+            setupAdapter(com.twitter.client.storage.models.Tweet.getMentions(TweetApplication.getLoggedInUser().getUserId()));
         }
     }
 
@@ -224,7 +224,7 @@ public class MentionsTimeLineFragment extends TweetTimeLineBaseFragment  {
             };
             handler.postDelayed(runnableCode, 2000);
         } else {
-            Toast.makeText(this.getContext(), "No network available. Cannot fetch new tweets.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this.getContext(), "No network available. Cannot fetch new mentions.", Toast.LENGTH_LONG).show();
             stopRefreshing();
         }
     }
