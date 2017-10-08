@@ -1,11 +1,8 @@
 package com.twitter.client.storage;
 
-import android.database.Cursor;
 import android.util.Log;
 
 import com.raizlabs.android.dbflow.config.FlowManager;
-import com.raizlabs.android.dbflow.sql.language.Method;
-import com.raizlabs.android.dbflow.sql.language.SQLite;
 import com.raizlabs.android.dbflow.sql.language.Select;
 import com.raizlabs.android.dbflow.structure.database.DatabaseWrapper;
 import com.raizlabs.android.dbflow.structure.database.transaction.ProcessModelTransaction;
@@ -13,7 +10,6 @@ import com.raizlabs.android.dbflow.structure.database.transaction.Transaction;
 import com.twitter.client.TweetApplication;
 import com.twitter.client.storage.models.Media;
 import com.twitter.client.storage.models.Tweet;
-import com.twitter.client.storage.models.Tweet_Table;
 
 import org.json.JSONArray;
 import org.json.JSONException;
