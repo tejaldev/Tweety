@@ -1,5 +1,6 @@
 package com.twitter.client;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -39,15 +40,6 @@ public class LoginActivity extends OAuthLoginActionBarActivity<TweetClient> {
 	@Override
 	public void onLoginSuccess() {
         fetchLoggedInUserDetails();
-
-		Intent i = new Intent(this, TweetListActivity.class);
-		if (Intent.ACTION_SEND.equals(getIntent().getAction())) {
-			// this is implicitly invoked intent so pass intent data to TweetListActivity
-			i.setAction(Intent.ACTION_SEND);
-			i.setType(getIntent().getType());
-			i.putExtras(getIntent());
-		}
-		startActivity(i);
 	}
 
 	// OAuth authentication flow failed, handle the error
@@ -66,11 +58,20 @@ public class LoginActivity extends OAuthLoginActionBarActivity<TweetClient> {
 	}
 
     private void fetchLoggedInUserDetails() {
+        final Context context = this;
         TweetApplication.getTweetRestClient().getUserDetails(null, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 Log.d(TAG, "fetchLoggedInUserDetails:: Response received successfully.");
                 TweetApplication.setLoggedInUser(User.parseUserInfoFromJson(response));
+                Intent i = new Intent(context, TweetListActivity.class);
+                if (Intent.ACTION_SEND.equals(getIntent().getAction())) {
+                    // this is implicitly invoked intent so pass intent data to TweetListActivity
+                    i.setAction(Intent.ACTION_SEND);
+                    i.setType(getIntent().getType());
+                    i.putExtras(getIntent());
+                }
+                startActivity(i);
             }
 
             @Override

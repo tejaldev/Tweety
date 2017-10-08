@@ -28,6 +28,7 @@ public class TweetClient extends OAuthBaseClient {
 	public static final String REST_CONSUMER_SECRET = "uX5JoKg4YKdiqqs4NoomabnCIWIkG0TVMH7TtsMBnyOwWOxjjG"; // Change this
 
 	public static final String HOME_TIMELINE_TWEETS_RELATIVE_URL = "statuses/home_timeline.json";
+	public static final String MENTIONS_TIMELINE_TWEETS_RELATIVE_URL = "statuses/mentions_timeline.json";
 
 	// Landing page to indicate the OAuth flow worked in case Chrome for Android 25+ blocks navigation back to the app.
 	public static final String FALLBACK_URL = "https://codepath.github.io/android-rest-client-template/success.html";
@@ -114,6 +115,13 @@ public class TweetClient extends OAuthBaseClient {
         RequestParams requestParams = buildRequestParams(params);
         client.post(apiUrl, requestParams, responseHandler);
     }
+
+	public void getMentionsTimelineTweets(RequestParams params, AsyncHttpResponseHandler responseHandler) {
+		String apiUrl = getApiUrl(MENTIONS_TIMELINE_TWEETS_RELATIVE_URL);
+		// Can specify query string params directly or through RequestParams.
+		RequestParams requestParams = buildRequestParams(params);
+		client.get(apiUrl, requestParams, responseHandler);
+	}
 
 	private RequestParams buildRequestParams(RequestParams params) {
 		if (params == null) {
