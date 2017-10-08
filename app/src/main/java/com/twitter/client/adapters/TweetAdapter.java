@@ -1,6 +1,7 @@
 package com.twitter.client.adapters;
 
 import android.net.Uri;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,8 +14,10 @@ import com.bumptech.glide.Glide;
 import com.twitter.client.R;
 import com.twitter.client.storage.models.Tweet;
 import com.twitter.client.transformations.CircularTransformation;
+import com.twitter.client.utils.PatternEditableBuilder;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 
 /**
@@ -187,6 +190,7 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
         bindRetweetButtonRes(holder, tweet);
         bindFavoriteButtonRes(holder, tweet);
+        setupClickableSpanForHashTagsnUserName(holder.titleText, position);
     }
 
     private void bindRetweetButtonRes(TweetViewHolder holder, Tweet tweet) {
@@ -203,6 +207,26 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         } else {
             holder.favTweetButton.setImageResource(R.drawable.ic_fav_tweet);
         }
+    }
+
+    private void setupClickableSpanForHashTagsnUserName(final TextView titleText, final int position) {
+        // Style clickable spans based on pattern
+        new PatternEditableBuilder().
+                addPattern(Pattern.compile("\\@(\\w+)"), ContextCompat.getColor(titleText.getContext(), R.color.colorAccent),
+                        new PatternEditableBuilder.SpannableClickedListener() {
+                            @Override
+                            public void onSpanClicked(String text) {
+                                itemClickListener.onAvatarImageClickListener(titleText, tweetList.get(position), position);
+                            }
+                        })
+        .addPattern(Pattern.compile("\\#(\\w+)"), ContextCompat.getColor(titleText.getContext(), R.color.colorAccent),
+                new PatternEditableBuilder.SpannableClickedListener() {
+                    @Override
+                    public void onSpanClicked(String text) {
+                        itemClickListener.onAvatarImageClickListener(titleText, tweetList.get(position), position);
+                    }
+                        }).into(titleText);
+
     }
 
     public class TweetViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
