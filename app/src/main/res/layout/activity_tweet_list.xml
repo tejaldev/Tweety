@@ -20,16 +20,30 @@
             app:titleTextColor="@android:color/white"
             android:background="?attr/colorAccent" />
 
+        <android.support.design.widget.TabLayout
+            android:id="@+id/sliding_tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:tabMode="fixed" />
+
     </android.support.design.widget.AppBarLayout>
 
-    <include layout="@layout/content_tweet_list" />
+    <android.support.v4.view.ViewPager
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/activity_vertical_large_margin"
+        android:background="@android:color/white" />
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        android:src="@drawable/ic_compose_tweet" />
+    <!--<include layout="@layout/content_tweet_list" />-->
+
+    <!--<android.support.design.widget.FloatingActionButton-->
+        <!--android:id="@+id/fab"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_gravity="bottom|end"-->
+        <!--android:layout_margin="@dimen/fab_margin"-->
+        <!--app:fabSize="mini"-->
+        <!--android:src="@drawable/ic_compose_tweet" />-->
 
 </android.support.design.widget.CoordinatorLayout>
