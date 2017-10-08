@@ -47,6 +47,7 @@ public abstract class TweetTimeLineBaseFragment extends Fragment implements Twee
     protected RecyclerView tweetRecyclerView;
     protected SwipeRefreshLayout swipeRefreshTweetLayout;
     protected TweetStatusActionHelper statusActionHelper;
+    protected EndlessRecyclerViewScrollListener scrollListener;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -100,10 +101,22 @@ public abstract class TweetTimeLineBaseFragment extends Fragment implements Twee
 
         progressBar = (ProgressBar) rootView.findViewById(R.id.progress_bar);
         tweetRecyclerView = (RecyclerView) rootView.findViewById(R.id.tweets_recycler_view);
+
+        setupScrollListenerWithLayoutMgr();
+
+        swipeRefreshTweetLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.swipe_refresh_tweets);
+        swipeRefreshTweetLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                fetchNewTweets();
+            }
+        });
+    }
+
+    protected void setupScrollListenerWithLayoutMgr() {
         LinearLayoutManager layoutManager = new LinearLayoutManager(this.getContext());
         tweetRecyclerView.setLayoutManager(layoutManager);
-
-        EndlessRecyclerViewScrollListener scrollListener = new EndlessRecyclerViewScrollListener(layoutManager) {
+        scrollListener = new EndlessRecyclerViewScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
                 // Refer below link to understand how to fetch next page of tweets
@@ -113,14 +126,6 @@ public abstract class TweetTimeLineBaseFragment extends Fragment implements Twee
         };
         // Adds the scroll listener to RecyclerView
         tweetRecyclerView.addOnScrollListener(scrollListener);
-
-        swipeRefreshTweetLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.swipe_refresh_tweets);
-        swipeRefreshTweetLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                fetchNewTweets();
-            }
-        });
     }
 
     protected void setupAdapter(final List<Tweet> tweets) {

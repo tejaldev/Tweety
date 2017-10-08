@@ -265,18 +265,6 @@ public class Tweet extends BaseModel {
                 .queryList();
     }
 
-    public static List<Tweet> getMentions(long userId) {
-        return SQLite.select()
-                .from(Tweet.class)
-                .leftOuterJoin(Media.class)
-                .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
-                .where(Tweet_Table.tweetId.in(SQLite.select(UserMentions_Table.tweet_tweetId)
-                        .from(UserMentions.class)
-                        .where(UserMentions_Table.user_userId.is(userId))))
-                .orderBy(Tweet_Table.tweetId, false)
-                .queryList();
-    }
-
     public static List<Tweet> getOldTweets(long oldTweetId) {
         return SQLite.select()
                 .from(Tweet.class)
@@ -293,6 +281,44 @@ public class Tweet extends BaseModel {
                 .leftOuterJoin(Media.class)
                 .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
                 .where(Tweet_Table.tweetId.greaterThan(newestTweetId))
+                .orderBy(Tweet_Table.tweetId, false)
+                .queryList();
+    }
+
+    public static List<Tweet> getMentions(long userId) {
+        return SQLite.select()
+                .from(Tweet.class)
+                .leftOuterJoin(Media.class)
+                .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
+                .where(Tweet_Table.tweetId.in(SQLite.select(UserMentions_Table.tweet_tweetId)
+                        .from(UserMentions.class)
+                        .where(UserMentions_Table.user_userId.is(userId))))
+                .orderBy(Tweet_Table.tweetId, false)
+                .queryList();
+    }
+
+    public static List<Tweet> getOldMentions(long oldTweetId, long userId) {
+        return SQLite.select()
+                .from(Tweet.class)
+                .leftOuterJoin(Media.class)
+                .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
+                .where(Tweet_Table.tweetId.in(SQLite.select(UserMentions_Table.tweet_tweetId)
+                        .from(UserMentions.class)
+                        .where(UserMentions_Table.user_userId.is(userId))
+                        .and(UserMentions_Table.tweet_tweetId.lessThan(oldTweetId))))
+                .orderBy(Tweet_Table.tweetId, false)
+                .queryList();
+    }
+
+    public static List<Tweet> getRecentMentions(long newestTweetId, long userId) {
+        return SQLite.select()
+                .from(Tweet.class)
+                .leftOuterJoin(Media.class)
+                .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
+                .where(Tweet_Table.tweetId.in(SQLite.select(UserMentions_Table.tweet_tweetId)
+                        .from(UserMentions.class)
+                        .where(UserMentions_Table.user_userId.is(userId))
+                        .and(UserMentions_Table.tweet_tweetId.greaterThan(newestTweetId))))
                 .orderBy(Tweet_Table.tweetId, false)
                 .queryList();
     }

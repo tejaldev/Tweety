@@ -4,6 +4,8 @@ import com.raizlabs.android.dbflow.annotation.Column;
 import com.raizlabs.android.dbflow.annotation.ForeignKey;
 import com.raizlabs.android.dbflow.annotation.PrimaryKey;
 import com.raizlabs.android.dbflow.annotation.Table;
+import com.raizlabs.android.dbflow.sql.language.Method;
+import com.raizlabs.android.dbflow.sql.language.SQLite;
 import com.raizlabs.android.dbflow.structure.BaseModel;
 import com.twitter.client.storage.TweetDatabase;
 
@@ -61,5 +63,25 @@ public class UserMentions extends BaseModel {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public static long getMaxMentionsTweetId() {
+        UserMentions mentions = SQLite.select(UserMentions_Table.tweet_tweetId, Method.max(UserMentions_Table.tweet_tweetId)).from(UserMentions.class).querySingle();
+
+        long max = -1;
+        if (mentions != null) {
+            max = mentions.getTweet().getTweetId();
+        }
+        return max;
+    }
+
+    public static long getMinMentionsTweetId() {
+        UserMentions mentions = SQLite.select(UserMentions_Table.tweet_tweetId, Method.min(UserMentions_Table.tweet_tweetId)).from(UserMentions.class).querySingle();
+
+        long min = -1;
+        if (mentions != null) {
+            min = mentions.getTweet().getTweetId();
+        }
+        return min;
     }
 }

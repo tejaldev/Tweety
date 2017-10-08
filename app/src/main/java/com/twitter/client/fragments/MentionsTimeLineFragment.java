@@ -1,10 +1,7 @@
 package com.twitter.client.fragments;
 
-import android.app.Application;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -14,21 +11,17 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 import com.raizlabs.android.dbflow.structure.database.transaction.Transaction;
-import com.twitter.client.R;
-import com.twitter.client.Testing;
 import com.twitter.client.TweetApplication;
-import com.twitter.client.adapters.TweetAdapter;
-import com.twitter.client.adapters.TweetStatusActionHelper;
 import com.twitter.client.listeners.EndlessRecyclerViewScrollListener;
 import com.twitter.client.storage.TweetDatabaseHelper;
 import com.twitter.client.storage.models.Tweet;
+import com.twitter.client.storage.models.UserMentions;
 import com.twitter.client.utils.MiscUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import java.util.List;
 
 import cz.msebera.android.httpclient.Header;
 
@@ -37,13 +30,8 @@ import cz.msebera.android.httpclient.Header;
  *
  * @author tejalpar
  */
-public class MentionsTimeLineFragment extends Fragment implements TweetAdapter.TweetItemClickListener, TweetStatusActionHelper.OnStatusUpdatedListener {
+public class MentionsTimeLineFragment extends TweetTimeLineBaseFragment  {
     public static String TAG = MentionsTimeLineFragment.class.getSimpleName();
-
-    private TweetAdapter tweetAdapter;
-    private RecyclerView tweetRecyclerView;
-    private SwipeRefreshLayout swipeRefreshTweetLayout;
-    private TweetStatusActionHelper statusActionHelper;
 
     public MentionsTimeLineFragment() {
     }
@@ -60,137 +48,184 @@ public class MentionsTimeLineFragment extends Fragment implements TweetAdapter.T
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View rootView = inflater.inflate(R.layout.content_tweet_list, container, false);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        return super.onCreateView(inflater, container, savedInstanceState);
+    }
 
-        statusActionHelper = new TweetStatusActionHelper(this);
-
-        tweetRecyclerView = (RecyclerView) rootView.findViewById(R.id.tweets_recycler_view);
+    @Override
+    protected void setupScrollListenerWithLayoutMgr() {
         LinearLayoutManager layoutManager = new LinearLayoutManager(this.getContext());
         tweetRecyclerView.setLayoutManager(layoutManager);
-        loadMentions();
-
-        EndlessRecyclerViewScrollListener scrollListener = new EndlessRecyclerViewScrollListener(layoutManager) {
+        scrollListener = new EndlessRecyclerViewScrollListener(layoutManager) {
             @Override
             public void onLoadMore(int page, int totalItemsCount, RecyclerView view) {
                 // Refer below link to understand how to fetch next page of tweets
                 // https://developer.twitter.com/en/docs/tweets/timelines/guides/working-with-timelines
-                //makeDelayedNextPageRequests(TweetApplication.getCurrMinTweetId() - 1);
+                makeDelayedNextPageRequests(UserMentions.getMinMentionsTweetId() - 1);
             }
         };
         // Adds the scroll listener to RecyclerView
         tweetRecyclerView.addOnScrollListener(scrollListener);
-
-        swipeRefreshTweetLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.swipe_refresh_tweets);
-        swipeRefreshTweetLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                //fetchNewTweets();
-            }
-        });
-        return rootView;
     }
 
-
-    private void loadMentions() {
+    @Override
+    protected void loadTweets() {
         //fetch tweets
         //if no network then fetch from db
         if (MiscUtils.isNetworkAvailable(this.getContext())) {
-            // fetch tweets
-            TweetApplication.getTweetRestClient().getMentionsTimelineTweets(null, new JsonHttpResponseHandler() {
+            showProgressBar();
+            Runnable runnableCode = new Runnable() {
                 @Override
-                public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
-                    Log.d(TAG, "loadTweets:: Response received successfully.");
-                }
-
-                @Override
-                public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
-                    Log.d(TAG, "loadTweets:: Response received successfully.");
-                    TweetDatabaseHelper.getInstance().saveTweetsToDB(response, new Transaction.Success() {
+                public void run() {
+                    TweetApplication.getTweetRestClient().getMentionsTimelineTweets(null, new JsonHttpResponseHandler() {
                         @Override
-                        public void onSuccess(@NonNull Transaction transaction) {
-                            Log.d(TAG, "Tweets saved to database.");
-                            setupAdapter(com.twitter.client.storage.models.Tweet.getMentions(TweetApplication.getLoggedInUser().getUserId()));
+                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                            Log.d(TAG, "loadTweets:: Response received successfully.");
+                            hideProgressBar();
                         }
-                    }, new Transaction.Error() {
+
                         @Override
-                        public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
-                            Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+                        public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                            Log.d(TAG, "loadTweets:: Response received successfully.");
+                            TweetDatabaseHelper.getInstance().saveTweetsToDB(response, new Transaction.Success() {
+                                @Override
+                                public void onSuccess(@NonNull Transaction transaction) {
+                                    Log.d(TAG, "Tweets saved to database.");
+                                    setupAdapter(com.twitter.client.storage.models.Tweet.getMentions(TweetApplication.getLoggedInUser().getUserId()));
+                                }
+                            }, new Transaction.Error() {
+                                @Override
+                                public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                                    Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+                                    hideProgressBar();
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                            Log.e(TAG, "loadTweets:: Failed to receive api response: " + responseString, throwable);
+                            hideProgressBar();
+                        }
+
+                        @Override
+                        public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                            Log.e(TAG, "loadTweets:: Failed to receive api response: " + errorResponse, throwable);
+                            hideProgressBar();
                         }
                     });
                 }
-
-                @Override
-                public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                    Log.e(TAG, "loadTweets:: Failed to receive api response: " + responseString, throwable);
-                }
-
-                @Override
-                public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
-                    Log.e(TAG, "loadTweets:: Failed to receive api response: " + errorResponse, throwable);
-                }
-            });
+            };
+            handler.postDelayed(runnableCode, 1000);
 
         } else {
             Toast.makeText(this.getContext(), "No network available. Loading offline tweets.", Toast.LENGTH_LONG).show();
             setupAdapter(com.twitter.client.storage.models.Tweet.getTweets());
         }
-
-//        try {
-//            setupAdapter(com.twitter.client.storage.models.Tweet.getMentions());
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-    }
-
-    private void setupAdapter(List<Tweet> tweets) {
-        tweetAdapter = new TweetAdapter(tweets, this);
-        tweetRecyclerView.setAdapter(tweetAdapter);
     }
 
     @Override
-    public void onRetweetActionSuccess(Tweet updatedTweet, boolean isUndoAction, int adapterPosition) {
+    protected void makeDelayedNextPageRequests(final long maxId) {
+        if (MiscUtils.isNetworkAvailable(this.getContext())) {
+            showProgressBar();
+            Runnable runnableCode = new Runnable() {
+                @Override
+                public void run() {
+                    RequestParams params = new RequestParams();
+                    params.put("max_id", maxId);
+                    TweetApplication.getTweetRestClient().getMentionsTimelineTweets(params, new JsonHttpResponseHandler() {
+                        @Override
+                        public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                            Log.d(TAG, "loadMoreTweets:: Response received successfully.");
+                            hideProgressBar();
+                        }
 
+                        @Override
+                        public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                            Log.d(TAG, "loadMoreTweets:: Response received successfully.");
+                            TweetDatabaseHelper.getInstance().saveTweetsToDB(response, new Transaction.Success() {
+                                @Override
+                                public void onSuccess(@NonNull Transaction transaction) {
+                                    Log.d(TAG, "Tweets saved to database.");
+                                    insertNewPageData(com.twitter.client.storage.models.Tweet.getOldMentions(maxId, TweetApplication.getLoggedInUser().getUserId()));
+                                }
+                            }, new Transaction.Error() {
+                                @Override
+                                public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                                    Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+                                    hideProgressBar();
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                            Log.e(TAG, "loadMoreTweets:: Failed to receive api response: " + responseString, throwable);
+                            hideProgressBar();
+                        }
+
+                        @Override
+                        public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                            Log.e(TAG, "loadMoreTweets:: Failed to receive api response: " + errorResponse, throwable);
+                            hideProgressBar();
+                        }
+                    });
+                }
+            };
+            // Run the above code block on the main thread after 2 seconds
+            handler.postDelayed(runnableCode, 1000);
+        }  else {
+            Toast.makeText(this.getContext(), "No network available. Cannot load more mentions.", Toast.LENGTH_LONG).show();
+            hideProgressBar();
+        }
     }
 
     @Override
-    public void onRetweetActionFailure(String error, boolean isUndoAction) {
+    protected void fetchNewTweets() {
+        if (MiscUtils.isNetworkAvailable(this.getContext())) {
+            Runnable runnableCode = new Runnable() {
+                @Override
+                public void run() {
+                    RequestParams params = new RequestParams();
+                    params.put("since_id", TweetApplication.getCurrMaxTweetId());
+                    TweetApplication.getTweetRestClient().getMentionsTimelineTweets(params, new JsonHttpResponseHandler() {
+                        @Override
+                        public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                            Log.d(TAG, "fetchNewTweets:: Response received successfully.");
+                            TweetDatabaseHelper.getInstance().saveTweetsToDB(response, new Transaction.Success() {
+                                @Override
+                                public void onSuccess(@NonNull Transaction transaction) {
+                                    Log.d(TAG, "Tweets saved to database.");
+                                    insertNewFetchedData(Tweet.getRecentMentions(UserMentions.getMaxMentionsTweetId(), TweetApplication.getLoggedInUser().getUserId()));
+                                    stopRefreshing();
+                                }
+                            }, new Transaction.Error() {
+                                @Override
+                                public void onError(@NonNull Transaction transaction, @NonNull Throwable error) {
+                                    Log.e(TAG, "Error occurred while saving tweets to database: " + error.getMessage());
+                                    stopRefreshing();
+                                }
+                            });
+                        }
 
-    }
+                        @Override
+                        public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                            Log.e(TAG, "fetchNewTweets:: Failed to receive api response: " + responseString, throwable);
+                            stopRefreshing();
+                        }
 
-    @Override
-    public void onFavoritedActionSuccess(Tweet updatedTweet, boolean isUndoAction, int adapterPosition) {
-
-    }
-
-    @Override
-    public void onFavoritedActionFailure(String error, boolean isUndoAction) {
-
-    }
-
-    @Override
-    public void onTweetItemClickListener(View view, Tweet selectedTweet, int position) {
-
-    }
-
-    @Override
-    public void onReplyClickListener(View view, Tweet selectedTweet, int position) {
-
-    }
-
-    @Override
-    public void onRetweetClickListener(View view, Tweet selectedTweet, int position) {
-
-    }
-
-    @Override
-    public void onFavoriteClickListener(View view, Tweet selectedTweet, int position) {
-
-    }
-
-    @Override
-    public void onAvatarImageClickListener(View view, Tweet selectedTweet, int position) {
-
+                        @Override
+                        public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                            Log.e(TAG, "fetchNewTweets:: Failed to receive api response: " + errorResponse, throwable);
+                            stopRefreshing();
+                        }
+                    });
+                }
+            };
+            handler.postDelayed(runnableCode, 2000);
+        } else {
+            Toast.makeText(this.getContext(), "No network available. Cannot fetch new tweets.", Toast.LENGTH_LONG).show();
+            stopRefreshing();
+        }
     }
 }
