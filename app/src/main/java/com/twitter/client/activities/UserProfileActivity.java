@@ -3,6 +3,8 @@ package com.twitter.client.activities;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.TabLayout;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
@@ -15,14 +17,17 @@ import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.twitter.client.R;
-import com.twitter.client.TweetApplication;
+import com.twitter.client.adapters.ProfileFragmentPagerAdapter;
 import com.twitter.client.storage.models.User;
 import com.twitter.client.transformations.CircularTransformation;
 
+import org.parceler.Parcels;
+
 public class UserProfileActivity extends AppCompatActivity {
     public static String TAG = UserProfileActivity.class.getSimpleName();
+    public static String ARGS_SELECTED_USER = "SELECTED_USER";
 
-    private User loggedInUser;
+    private User selectedUser;
 
     private TextView handleText;
     private TextView taglineText;
@@ -32,6 +37,9 @@ public class UserProfileActivity extends AppCompatActivity {
     private ImageView profileBgImage;
     private FloatingActionButton fabProfileImage;
 
+    private TabLayout tabLayout;
+    private ProfileFragmentPagerAdapter fragmentPagerAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,6 +47,17 @@ public class UserProfileActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("");
         setSupportActionBar(toolbar);
+
+        selectedUser = Parcels.unwrap(getIntent().getParcelableExtra(ARGS_SELECTED_USER));
+
+        // Get the ViewPager and set it's PagerAdapter so that it can display items
+        fragmentPagerAdapter = new ProfileFragmentPagerAdapter(getSupportFragmentManager(), UserProfileActivity.this, selectedUser);
+        ViewPager viewPager = (ViewPager) findViewById(R.id.container);
+        viewPager.setAdapter(fragmentPagerAdapter);
+
+        // Give the TabLayout the ViewPager
+        tabLayout = (TabLayout) findViewById(R.id.sliding_tabs);
+        tabLayout.setupWithViewPager(viewPager);
 
         handleText = (TextView) findViewById(R.id.handle_text);
         taglineText = (TextView) findViewById(R.id.tagline_text);
@@ -73,45 +92,46 @@ public class UserProfileActivity extends AppCompatActivity {
     }
 
     private void bindDataToView() {
-        loggedInUser = TweetApplication.getLoggedInUser();
+        if (selectedUser != null) {
 
-        handleText.setText(loggedInUser.getUserHandle());
-        taglineText.setText(loggedInUser.getDescription());
-        screenNameText.setText(loggedInUser.getScreenName());
-        followersCountText.setText(String.valueOf(loggedInUser.getFollowersCount()));
-        followingCountText.setText(String.valueOf(loggedInUser.getFollowingCount()));
+            handleText.setText(selectedUser.getUserHandle());
+            taglineText.setText(selectedUser.getDescription());
+            screenNameText.setText(selectedUser.getScreenName());
+            followersCountText.setText(String.valueOf(selectedUser.getFollowersCount()));
+            followingCountText.setText(String.valueOf(selectedUser.getFollowingCount()));
 
-        // profile
-        Glide.with(fabProfileImage.getContext())
-            .load(Uri.parse(loggedInUser.getProfileImageUrl()))
-            .bitmapTransform(new CircularTransformation(fabProfileImage.getContext()))
-            .placeholder(R.drawable.placeholder_image)
-            .into(new SimpleTarget<GlideDrawable>() {
-                @Override
-                public void onResourceReady(final GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
-                    runOnUiThread(new Runnable() {
+            // profile
+            Glide.with(fabProfileImage.getContext())
+                    .load(Uri.parse(selectedUser.getProfileImageUrl()))
+                    .bitmapTransform(new CircularTransformation(fabProfileImage.getContext()))
+                    .placeholder(R.drawable.placeholder_image)
+                    .into(new SimpleTarget<GlideDrawable>() {
                         @Override
-                        public void run() {
-                            fabProfileImage.setImageDrawable(resource);
+                        public void onResourceReady(final GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    fabProfileImage.setImageDrawable(resource);
+                                }
+                            });
                         }
                     });
-                }
-            });
 
-        // background
-        Glide.with(this)
-                .load(Uri.parse(loggedInUser.getProfileBannerUrl()))
-                .placeholder(R.drawable.placeholder_image)
-                .into(new SimpleTarget<GlideDrawable>() {
-                    @Override
-                    public void onResourceReady(final GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                profileBgImage.setImageDrawable(resource);
-                            }
-                        });
-                    }
-                });
+            // background
+            Glide.with(this)
+                    .load(Uri.parse(selectedUser.getProfileBannerUrl()))
+                    .placeholder(R.drawable.placeholder_image)
+                    .into(new SimpleTarget<GlideDrawable>() {
+                        @Override
+                        public void onResourceReady(final GlideDrawable resource, GlideAnimation<? super GlideDrawable> glideAnimation) {
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    profileBgImage.setImageDrawable(resource);
+                                }
+                            });
+                        }
+                    });
+        }
     }
 }

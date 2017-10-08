@@ -24,6 +24,8 @@ import com.twitter.client.fragments.HomeTimeLineFragment;
 import com.twitter.client.storage.models.Tweet;
 import com.twitter.client.transformations.CircularTransformation;
 
+import org.parceler.Parcels;
+
 public class TweetListActivity extends AppCompatActivity implements ComposeDialogFragment.TweetPostCompletionListener {
     public static String TAG = TweetListActivity.class.getSimpleName();
 
@@ -118,6 +120,7 @@ public class TweetListActivity extends AppCompatActivity implements ComposeDialo
 
     private void showUserProfileActivity() {
         Intent intent = new Intent(this, UserProfileActivity.class);
+        intent.putExtra(UserProfileActivity.ARGS_SELECTED_USER, Parcels.wrap(TweetApplication.getLoggedInUser()));
         startActivity(intent);
     }
 

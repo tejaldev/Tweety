@@ -34,6 +34,7 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         void onReplyClickListener(View view, Tweet selectedTweet, int position);
         void onRetweetClickListener(View view, Tweet selectedTweet, int position);
         void onFavoriteClickListener(View view, Tweet selectedTweet, int position);
+        void onAvatarImageClickListener(View view, Tweet selectedTweet, int position);
     }
 
     public TweetAdapter(List<Tweet> tweetList, TweetItemClickListener itemClickListener) {
@@ -221,6 +222,13 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             favTweetButton = (ImageButton) rootView.findViewById(R.id.fav_tweet_button);
             replyTweetButton = (ImageButton) rootView.findViewById(R.id.reply_tweet_button);
             retweetTweetButton = (ImageButton) rootView.findViewById(R.id.re_tweet_button);
+
+            avatarImageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    itemClickListener.onAvatarImageClickListener(v, tweetList.get(getAdapterPosition()), getAdapterPosition());
+                }
+            });
 
             setupActionButtonListeners();
 

@@ -257,13 +257,6 @@ public class Tweet extends BaseModel {
 	}
 
     public static List<Tweet> getTweets() {
-//        return SQLite.select(Tweet_Table.tweetId, Tweet_Table.text, Tweet_Table.createdAt, Tweet_Table.user_userId,
-//                            Media_Table.mediaId, Media_Table.mediaUrl)
-//                .from(Tweet.class)
-//                .leftOuterJoin(Media.class)
-//                .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
-//                .queryList();
-
         return SQLite.select()
                 .from(Tweet.class)
                 .leftOuterJoin(Media.class)
@@ -273,12 +266,6 @@ public class Tweet extends BaseModel {
     }
 
     public static List<Tweet> getMentions(long userId) {
-//        return SQLite.select()
-//                .from(Tweet.class)
-//                .innerJoin(UserMentions.class)
-//                .on(Tweet_Table.tweetId.is(UserMentions_Table.tweet_tweetId))
-//                .queryList();
-
         return SQLite.select()
                 .from(Tweet.class)
                 .leftOuterJoin(Media.class)
@@ -306,6 +293,46 @@ public class Tweet extends BaseModel {
                 .leftOuterJoin(Media.class)
                 .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
                 .where(Tweet_Table.tweetId.greaterThan(newestTweetId))
+                .orderBy(Tweet_Table.tweetId, false)
+                .queryList();
+    }
+
+    public static List<Tweet> getTweetsByUser(String screenName) {
+        return SQLite.select()
+                .from(Tweet.class)
+                .leftOuterJoin(Media.class)
+                .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
+                .where(Tweet_Table.user_userId.in(SQLite.select(User_Table.userId)
+                        .from(User.class)
+                        .where(User_Table.screenName.is(screenName))))
+                .orderBy(Tweet_Table.tweetId, false)
+                .queryList();
+    }
+
+    public static List<Tweet> getOldTweetsByUser(long oldTweetId, String screenName) {
+        return SQLite.select()
+                .from(Tweet.class)
+                .leftOuterJoin(Media.class)
+                .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
+                .where(Tweet_Table.tweetId.lessThan(oldTweetId))
+                .and(Tweet_Table.user_userId
+                        .in(SQLite.select(User_Table.userId)
+                                .from(User.class)
+                                .where(User_Table.screenName.is(screenName))))
+                .orderBy(Tweet_Table.tweetId, false)
+                .queryList();
+    }
+
+    public static List<Tweet> getRecentTweetsByUser(long newestTweetId, String screenName) {
+        return SQLite.select()
+                .from(Tweet.class)
+                .leftOuterJoin(Media.class)
+                .on(Tweet_Table.tweetId.is(Media_Table.tweet_tweetId))
+                .where(Tweet_Table.tweetId.greaterThan(newestTweetId))
+                .and(Tweet_Table.user_userId
+                        .in(SQLite.select(User_Table.userId)
+                                .from(User.class)
+                                .where(User_Table.screenName.is(screenName))))
                 .orderBy(Tweet_Table.tweetId, false)
                 .queryList();
     }
