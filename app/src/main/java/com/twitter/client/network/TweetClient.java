@@ -27,6 +27,7 @@ public class TweetClient extends OAuthBaseClient {
 	public static final String REST_CONSUMER_KEY = "z8rOo8sEdqmGCCyD4LsYKG7Wh";       // Change this
 	public static final String REST_CONSUMER_SECRET = "uX5JoKg4YKdiqqs4NoomabnCIWIkG0TVMH7TtsMBnyOwWOxjjG"; // Change this
 
+    public static final String SEARCH_TWEETS_RELATIVE_URL = "search/tweets.json";
 	public static final String USER_TIMELINE_TWEETS_RELATIVE_URL = "statuses/user_timeline.json";
 	public static final String HOME_TIMELINE_TWEETS_RELATIVE_URL = "statuses/home_timeline.json";
 	public static final String MENTIONS_TIMELINE_TWEETS_RELATIVE_URL = "statuses/mentions_timeline.json";
@@ -130,6 +131,13 @@ public class TweetClient extends OAuthBaseClient {
 		RequestParams requestParams = buildRequestParams(params);
 		client.get(apiUrl, requestParams, responseHandler);
 	}
+
+    public void getSearchQueryResults(RequestParams params, AsyncHttpResponseHandler responseHandler) {
+        String apiUrl = getApiUrl(SEARCH_TWEETS_RELATIVE_URL);
+        // Can specify query string params directly or through RequestParams.
+        RequestParams requestParams = buildRequestParams(params);
+        client.get(apiUrl, requestParams, responseHandler);
+    }
 
 	private RequestParams buildRequestParams(RequestParams params) {
 		if (params == null) {

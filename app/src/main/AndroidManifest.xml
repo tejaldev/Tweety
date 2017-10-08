@@ -59,6 +59,11 @@
         <activity
             android:name=".activities.UserProfileActivity">
         </activity>
+
+        <activity
+            android:name=".activities.SearchActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+        </activity>
     </application>
 
 </manifest>

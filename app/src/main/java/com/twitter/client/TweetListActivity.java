@@ -5,8 +5,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -17,6 +19,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.GlideDrawable;
 import com.bumptech.glide.request.animation.GlideAnimation;
 import com.bumptech.glide.request.target.SimpleTarget;
+import com.twitter.client.activities.SearchActivity;
 import com.twitter.client.activities.UserProfileActivity;
 import com.twitter.client.adapters.TweetFragmentPagerAdapter;
 import com.twitter.client.fragments.ComposeDialogFragment;
@@ -76,6 +79,25 @@ public class TweetListActivity extends AppCompatActivity implements ComposeDialo
                         menuItem.setIcon(resource);
                     }
                 });
+
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        final SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+
+                // workaround to avoid issues with some emulators and keyboard devices firing twice if a keyboard enter is used
+                // see https://code.google.com/p/android/issues/detail?id=24599
+                submitQuery(query);
+                searchView.clearFocus();
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return true;
+            }
+        });
         return true;
     }
 
@@ -127,5 +149,11 @@ public class TweetListActivity extends AppCompatActivity implements ComposeDialo
     private void showComposeDialogFragment(Intent intent) {
         ComposeDialogFragment dialogFragment = ComposeDialogFragment.newInstance("Compose new tweet", this, intent);
         dialogFragment.show(getFragmentManager(), "Compose");
+    }
+
+    private void submitQuery(final String searchQuery) {
+        Intent intent = new Intent(this, SearchActivity.class);
+        intent.putExtra(SearchActivity.ARGS_SEARCH_QUERY, searchQuery);
+        startActivity(intent);
     }
 }

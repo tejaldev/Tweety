@@ -95,6 +95,16 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         this.notifyItemChanged(position);
     }
 
+    /**
+     * Replaces adapter items with new data
+     * @param newItems
+     */
+    public void replaceItems(List<Tweet> newItems) {
+        tweetList.clear();
+        tweetList.addAll(newItems);
+        this.notifyItemRangeChanged(0, newItems.size());
+    }
+
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 
