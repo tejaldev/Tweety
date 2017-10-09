@@ -36,6 +36,8 @@ import org.parceler.Parcels;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import cz.msebera.android.httpclient.Header;
 
 /**
@@ -55,9 +57,9 @@ public class SearchActivity extends AppCompatActivity implements TweetAdapter.Tw
 
     protected Handler handler;
     protected TweetAdapter tweetAdapter;
-    protected ProgressBar progressBar;
-    protected RecyclerView tweetRecyclerView;
-    protected SwipeRefreshLayout swipeRefreshTweetLayout;
+    @BindView(R.id.progress_bar) protected ProgressBar progressBar;
+    @BindView(R.id.tweets_recycler_view) protected RecyclerView tweetRecyclerView;
+    @BindView(R.id.swipe_refresh_tweets) protected SwipeRefreshLayout swipeRefreshTweetLayout;
     protected TweetStatusActionHelper statusActionHelper;
     protected EndlessRecyclerViewScrollListener scrollListener;
 
@@ -72,6 +74,8 @@ public class SearchActivity extends AppCompatActivity implements TweetAdapter.Tw
 
         searchQuery = getIntent().getStringExtra(ARGS_SEARCH_QUERY);
 
+        // Bind views
+        ButterKnife.bind(this);
         setupRootView();
         makeDelayedSearchRequests(searchQuery);
     }
@@ -117,13 +121,7 @@ public class SearchActivity extends AppCompatActivity implements TweetAdapter.Tw
     protected void setupRootView() {
         handler = new Handler();
         statusActionHelper = new TweetStatusActionHelper(this);
-
-        progressBar = (ProgressBar) findViewById(R.id.progress_bar);
-        tweetRecyclerView = (RecyclerView) findViewById(R.id.tweets_recycler_view);
-
         setupScrollListenerWithLayoutMgr();
-
-        swipeRefreshTweetLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_tweets);
         swipeRefreshTweetLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {

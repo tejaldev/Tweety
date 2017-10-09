@@ -19,6 +19,9 @@ import com.twitter.client.utils.PatternEditableBuilder;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 
 /**
  * Tweet recycler view adapter
@@ -157,13 +160,14 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     }
 
     public class ImageTweetViewHolder extends TweetViewHolder implements View.OnClickListener {
-        public ImageView mainImageView;
+        @BindView(R.id.main_image) ImageView mainImageView;
 
         public ImageTweetViewHolder(View rootView) {
             super(rootView);
 
+            // Bind views using ButterKnife
+            ButterKnife.bind(this, rootView);
             rootView.setOnClickListener(this);
-            mainImageView = (ImageView) rootView.findViewById(R.id.main_image);
         }
 
         @Override
@@ -230,32 +234,23 @@ public class TweetAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     }
 
     public class TweetViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        public TextView titleText;
-        public TextView handleText;
-        public TextView timeStampText;
-        public TextView screenNameText;
-        public TextView retweetCountText;
-        public TextView favoriteCountText;
-        public ImageView avatarImageView;
-        private ImageButton favTweetButton;
-        private ImageButton replyTweetButton;
-        private ImageButton retweetTweetButton;
+        @BindView(R.id.title_text) TextView titleText;
+        @BindView(R.id.handle_text) TextView handleText;
+        @BindView(R.id.timestamp_text) TextView timeStampText;
+        @BindView(R.id.screen_name_text) TextView screenNameText;
+        @BindView(R.id.re_tweet_count) TextView retweetCountText;
+        @BindView(R.id.fav_tweet_count) TextView favoriteCountText;
+        @BindView(R.id.avatar_image) ImageView avatarImageView;
+        @BindView(R.id.fav_tweet_button) ImageButton favTweetButton;
+        @BindView(R.id.reply_tweet_button) ImageButton replyTweetButton;
+        @BindView(R.id.re_tweet_button) ImageButton retweetTweetButton;
 
         public TweetViewHolder(View rootView) {
             super(rootView);
 
+            // Bind views using ButterKnife
+            ButterKnife.bind(this, rootView);
             rootView.setOnClickListener(this);
-            titleText = (TextView) rootView.findViewById(R.id.title_text);
-            handleText = (TextView) rootView.findViewById(R.id.handle_text);
-            timeStampText = (TextView) rootView.findViewById(R.id.timestamp_text);
-            screenNameText = (TextView) rootView.findViewById(R.id.screen_name_text);
-            retweetCountText = (TextView) rootView.findViewById(R.id.re_tweet_count);
-            favoriteCountText = (TextView) rootView.findViewById(R.id.fav_tweet_count);
-            avatarImageView = (ImageView) rootView.findViewById(R.id.avatar_image);
-
-            favTweetButton = (ImageButton) rootView.findViewById(R.id.fav_tweet_button);
-            replyTweetButton = (ImageButton) rootView.findViewById(R.id.reply_tweet_button);
-            retweetTweetButton = (ImageButton) rootView.findViewById(R.id.re_tweet_button);
 
             avatarImageView.setOnClickListener(new View.OnClickListener() {
                 @Override

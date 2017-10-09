@@ -32,8 +32,12 @@ import org.parceler.Parcels;
 
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.Unbinder;
+
 /**
- * Main fragment holding all list view display logic
+ * Main fragment holding all list view display logic used by {@link HomeTimeLineFragment}, {@link MentionsTimeLineFragment} and {@link UserTimeLineFragment}
  *
  * @author tejalpar
  */
@@ -43,9 +47,11 @@ public abstract class TweetTimeLineBaseFragment extends Fragment implements Twee
 
     protected Handler handler;
     protected TweetAdapter tweetAdapter;
-    protected ProgressBar progressBar;
-    protected RecyclerView tweetRecyclerView;
-    protected SwipeRefreshLayout swipeRefreshTweetLayout;
+    @BindView(R.id.progress_bar) protected ProgressBar progressBar;
+    @BindView(R.id.tweets_recycler_view) protected RecyclerView tweetRecyclerView;
+    @BindView(R.id.swipe_refresh_tweets) protected SwipeRefreshLayout swipeRefreshTweetLayout;
+
+    private Unbinder unbinder;
     protected TweetStatusActionHelper statusActionHelper;
     protected EndlessRecyclerViewScrollListener scrollListener;
 
@@ -53,6 +59,9 @@ public abstract class TweetTimeLineBaseFragment extends Fragment implements Twee
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.content_tweet_list, container, false);
+
+        // Bind views via unbinder
+        unbinder = ButterKnife.bind(this, rootView);
         setupRootView(rootView);
         return rootView;
     }
@@ -61,6 +70,13 @@ public abstract class TweetTimeLineBaseFragment extends Fragment implements Twee
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         loadTweets();
+    }
+
+    // When binding a fragment in onCreateView, set the views to null in onDestroyView.
+    // ButterKnife returns an Unbinder on the initial binding that has an unbind method to do this automatically.
+    @Override public void onDestroyView() {
+        super.onDestroyView();
+        unbinder.unbind();
     }
 
     @Override
@@ -99,12 +115,12 @@ public abstract class TweetTimeLineBaseFragment extends Fragment implements Twee
         handler = new Handler();
         statusActionHelper = new TweetStatusActionHelper(this);
 
-        progressBar = (ProgressBar) rootView.findViewById(R.id.progress_bar);
-        tweetRecyclerView = (RecyclerView) rootView.findViewById(R.id.tweets_recycler_view);
+        //progressBar = (ProgressBar) rootView.findViewById(R.id.progress_bar);
+        //tweetRecyclerView = (RecyclerView) rootView.findViewById(R.id.tweets_recycler_view);
 
         setupScrollListenerWithLayoutMgr();
 
-        swipeRefreshTweetLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.swipe_refresh_tweets);
+        //swipeRefreshTweetLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.swipe_refresh_tweets);
         swipeRefreshTweetLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {

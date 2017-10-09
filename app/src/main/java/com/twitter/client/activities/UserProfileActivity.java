@@ -23,22 +23,23 @@ import com.twitter.client.transformations.CircularTransformation;
 
 import org.parceler.Parcels;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 public class UserProfileActivity extends AppCompatActivity {
     public static String TAG = UserProfileActivity.class.getSimpleName();
     public static String ARGS_SELECTED_USER = "SELECTED_USER";
 
     private User selectedUser;
 
-    private TextView handleText;
-    private TextView taglineText;
-    private TextView screenNameText;
-    private TextView followingCountText;
-    private TextView followersCountText;
-    private ImageView profileBgImage;
-    private FloatingActionButton fabProfileImage;
-
-    private TabLayout tabLayout;
-    private ProfileFragmentPagerAdapter fragmentPagerAdapter;
+    @BindView(R.id.handle_text) protected TextView handleText;
+    @BindView(R.id.tagline_text) protected TextView taglineText;
+    @BindView(R.id.screen_name_text) protected TextView screenNameText;
+    @BindView(R.id.following_count_text) protected TextView followingCountText;
+    @BindView(R.id.followers_count_text) protected TextView followersCountText;
+    @BindView(R.id.profile_bg_image) protected ImageView profileBgImage;
+    @BindView(R.id.fab_profile_image) protected FloatingActionButton fabProfileImage;
+    @BindView(R.id.sliding_tabs) protected TabLayout tabLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,22 +51,16 @@ public class UserProfileActivity extends AppCompatActivity {
 
         selectedUser = Parcels.unwrap(getIntent().getParcelableExtra(ARGS_SELECTED_USER));
 
+        // Bind views
+        ButterKnife.bind(this);
+
         // Get the ViewPager and set it's PagerAdapter so that it can display items
-        fragmentPagerAdapter = new ProfileFragmentPagerAdapter(getSupportFragmentManager(), UserProfileActivity.this, selectedUser);
-        ViewPager viewPager = (ViewPager) findViewById(R.id.container);
+        ProfileFragmentPagerAdapter fragmentPagerAdapter = new ProfileFragmentPagerAdapter(getSupportFragmentManager(), UserProfileActivity.this, selectedUser);
+        ViewPager viewPager = (ViewPager) findViewById(R.id.container); // cannot bind local variables
         viewPager.setAdapter(fragmentPagerAdapter);
 
         // Give the TabLayout the ViewPager
-        tabLayout = (TabLayout) findViewById(R.id.sliding_tabs);
         tabLayout.setupWithViewPager(viewPager);
-
-        handleText = (TextView) findViewById(R.id.handle_text);
-        taglineText = (TextView) findViewById(R.id.tagline_text);
-        screenNameText = (TextView) findViewById(R.id.screen_name_text);
-        followingCountText = (TextView) findViewById(R.id.following_count_text);
-        followersCountText = (TextView) findViewById(R.id.followers_count_text);
-        profileBgImage = (ImageView) findViewById(R.id.profile_bg_image);
-        fabProfileImage = (FloatingActionButton) findViewById(R.id.fab_profile_image);
 
         bindDataToView();
     }

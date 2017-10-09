@@ -32,6 +32,9 @@ import com.twitter.client.transformations.CircularTransformation;
 
 import org.json.JSONObject;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.Unbinder;
 import cz.msebera.android.httpclient.Header;
 
 /**
@@ -45,12 +48,13 @@ public class ComposeDialogFragment extends DialogFragment {
     public static final String ARG_IS_IMPLICIT = "IMPLICIT_INVOCATION";
 
     private int charCounter = 0;
-    private TextView handleText;
-    private EditText composeText;
-    private TextView screenNameText;
-    private TextView charCounterText;
-    private ImageView avatarImageView;
+    @BindView(R.id.handle_text) protected TextView handleText;
+    @BindView(R.id.compose_edit_text) protected EditText composeText;
+    @BindView(R.id.screen_name_text) protected TextView screenNameText;
+    @BindView(R.id.char_limit_counter_text) protected TextView charCounterText;
+    @BindView(R.id.avatar_image) protected ImageView avatarImageView;
 
+    private Unbinder unbinder;
     private static TweetPostCompletionListener postCompletionListener;
 
     public interface TweetPostCompletionListener {
@@ -84,11 +88,8 @@ public class ComposeDialogFragment extends DialogFragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.compose_dialog_frag_layout, container);
 
-        handleText = (TextView) view.findViewById(R.id.handle_text);
-        screenNameText = (TextView) view.findViewById(R.id.screen_name_text);
-        charCounterText = (TextView) view.findViewById(R.id.char_limit_counter_text);
-        composeText = (EditText) view.findViewById(R.id.compose_edit_text);
-        avatarImageView = (ImageView) view.findViewById(R.id.avatar_image);
+        // Bind views via unbinder
+        unbinder = ButterKnife.bind(this, view);
 
         final ImageButton closeDialogButton = (ImageButton) view.findViewById(R.id.close_button);
         final Button saveTweetButton = (Button) view.findViewById(R.id.save_tweet);
@@ -130,6 +131,13 @@ public class ComposeDialogFragment extends DialogFragment {
 
         populateUI(view.getContext());
         return view;
+    }
+
+    // When binding a fragment in onCreateView, set the views to null in onDestroyView.
+    // ButterKnife returns an Unbinder on the initial binding that has an unbind method to do this automatically.
+    @Override public void onDestroyView() {
+        super.onDestroyView();
+        unbinder.unbind();
     }
 
     public void postComposedTweet(final Context context, String status) {

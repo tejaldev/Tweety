@@ -32,6 +32,8 @@ import com.twitter.client.transformations.CircularTransformation;
 import org.json.JSONObject;
 import org.parceler.Parcels;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import cz.msebera.android.httpclient.Header;
 
 public class TweetDetailActivity extends AppCompatActivity implements TweetStatusActionHelper.OnStatusUpdatedListener {
@@ -53,19 +55,20 @@ public class TweetDetailActivity extends AppCompatActivity implements TweetStatu
 
     private Tweet selectedTweet;
     private Tweet repliedTweet;
-
-    private TextView titleText;
-    private TextView handleText;
-    private EditText composeText;
-    private TextView screenNameText;
-    private TextView charCounterText;
-    private ImageView mainImageView;
-    private ImageView avatarImageView;
-    private Button saveTweetReplyButton;
-    private ImageButton favTweetButton;
-    private ImageButton replyTweetButton;
-    private ImageButton retweetTweetButton;
     private TweetStatusActionHelper statusActionHelper;
+
+    // NOTE: for databinding the fields cannot be private/static
+    @BindView(R.id.title_text) protected TextView titleText;
+    @BindView(R.id.handle_text) protected TextView handleText;
+    @BindView(R.id.compose_edit_text) protected EditText composeText;
+    @BindView(R.id.screen_name_text) protected TextView screenNameText;
+    @BindView(R.id.char_limit_counter_text) protected TextView charCounterText;
+    @BindView(R.id.main_image) protected ImageView mainImageView;
+    @BindView(R.id.avatar_image) protected ImageView avatarImageView;
+    @BindView(R.id.save_tweet_reply) protected Button saveTweetReplyButton;
+    @BindView(R.id.fav_tweet_button) protected ImageButton favTweetButton;
+    @BindView(R.id.reply_tweet_button) protected ImageButton replyTweetButton;
+    @BindView(R.id.re_tweet_button) protected ImageButton retweetTweetButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,18 +87,8 @@ public class TweetDetailActivity extends AppCompatActivity implements TweetStatu
         position = intent.getIntExtra(ARG_SELECTED_TWEET_POS, -1);
         composeHintText = getString(R.string.detail_compose_hint_text, selectedTweet.getUser().getScreenName());
 
-        titleText = (TextView) findViewById(R.id.title_text);
-        handleText = (TextView) findViewById(R.id.handle_text);
-        screenNameText = (TextView) findViewById(R.id.screen_name_text);
-        mainImageView = (ImageView) findViewById(R.id.main_image);
-        avatarImageView = (ImageView) findViewById(R.id.avatar_image);
-        favTweetButton = (ImageButton) findViewById(R.id.fav_tweet_button);
-        replyTweetButton = (ImageButton) findViewById(R.id.reply_tweet_button);
-        retweetTweetButton = (ImageButton) findViewById(R.id.re_tweet_button);
-        charCounterText = (TextView) findViewById(R.id.char_limit_counter_text);
-        composeText = (EditText) findViewById(R.id.compose_edit_text);
-        saveTweetReplyButton = (Button) findViewById(R.id.save_tweet_reply);
-
+        // Bind views
+        ButterKnife.bind(this);
         setupComposeTextEventListeners();
         setupSaveTweetButtonListener();
         setupActionButtonListeners();
